@@ -1,0 +1,6 @@
+{
+  "watch": ["./backend"],
+  "ext": "ts",
+  "ignore": ["**/*.spec.ts"],
+  "exec": "DEBUG=express:* ts-node ./backend/index.ts"
+}

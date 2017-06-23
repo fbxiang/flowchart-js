@@ -4,21 +4,24 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "backend": "nodemon"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "d3": "^4.9.1",
+    "express": "^4.15.3",
     "jquery": "^3.2.1"
   },
   "devDependencies": {
     "@types/d3": "^4.9.0",
+    "@types/express": "^4.0.36",
     "@types/jquery": "^3.2.3",
     "css-loader": "^0.28.4",
     "html-webpack-plugin": "^2.28.0",
     "style-loader": "^0.18.2",
     "ts-loader": "^2.2.0",
+    "ts-node": "^3.1.0",
     "typescript": "^2.3.4",
     "typings-for-css-modules-loader": "^1.5.0"
   }
