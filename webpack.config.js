@@ -2,20 +2,18 @@ var path = require('path');
 var HTMLWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-    entry: "./frontend/entry.js",
+    entry: "./frontend/index.ts",
     output: {
         path: path.resolve(__dirname, "dist"),
         filename: "bundle.js"
     },
-    plugins: [new HTMLWebpackPlugin({
-        template: './frontend/index.html'
-    })],
+    resolve: {
+        extensions: [".webpack.js", ".web.js", ".ts", ".tsx", ".js"]
+    },
     module: {
-        rules: [
-            {test: /\.css$/, use: [
-                {loader: 'style-loader'},
-                {loader: 'css-loader'}
-            ]}
+        loaders: [
+            {test: /\.tsx?$/, loader: "ts-loader"},
+            {test: /\.css/, loader: "style-loader!css-loader"}
         ]
     },
     devServer: {
