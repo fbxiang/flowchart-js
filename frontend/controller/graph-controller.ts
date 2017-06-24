@@ -1,9 +1,12 @@
 import * as d3 from 'd3';
+import { Node, PortIn, PortOut } from '../graph';
 
-export class GraphController {
+export class GraphView {
   menuOpen = false;
 
   svg: d3.Selection<d3.BaseType, {}, HTMLElement, any>;
+  canvas: d3.Selection<d3.BaseType, {}, HTMLElement, any>;
+
   svgWidth = 0;
   svgHeight = 0;
   gridWidth = 20;
@@ -41,7 +44,7 @@ export class GraphController {
       .classed('graph-grid', true).call(d3.axisTop(xScale)
                                         .ticks(Math.round(this.svgWidth / this.gridWidth))
                                         .tickSize(-this.svgHeight));
-    this.svg = this.svg.append('rect')
+    this.canvas = this.svg.append('rect')
       .classed('canvas', true)
       .attr('width', '100%')
       .attr('height', '100%')
@@ -49,11 +52,11 @@ export class GraphController {
   }
 
   initMenu() {
-    this.svg.on('contextmenu', () => {
+    this.canvas.on('contextmenu', () => {
       d3.event.preventDefault();
       this.popupBaseMenu(d3.event);
     });
-    this.svg.on('click', () => {
+    this.canvas.on('click', () => {
       this.closeMenu();
     })
   }
@@ -83,5 +86,60 @@ export class GraphController {
 
   contextMenu(event) {
     if (this.menuOpen) return;
+  }
+
+  createNode(node: Node) {
+    const newNode = this.svg.append('g')
+      .attr('transform', `translate(${node.display.x}, ${node.display.y})`)
+
+    // draw background
+    const rect = newNode.append('rect')
+      .classed('graph-node-rect', true)
+      .attr('rx', 10).attr('ry', 10);
+
+    // draw title
+    const title = newNode.append('text').text(node.name);
+    const titleRect: SVGRect = (<any>title.node()).getBBox();
+    title.classed('graph-node-title', true)
+      .attr('x', 10).attr('y', titleRect.height);
+
+    // draw ports
+    const radius = 5;
+    const separation = 15;
+    const offset = 20;
+    const inPorts = newNode.append('g');
+    inPorts.selectAll('circle')
+      .data(node.inputs)
+      .enter()
+      .append('circle')
+      .classed('graph-port', true)
+      .attr('r', radius)
+      .attr('cx', 0)
+      .attr('cy', (d, i) => separation * i);
+
+    const inPortsRect: SVGRect = (<any>inPorts.node()).getBBox();
+
+    const outPorts = newNode.append('g');
+    outPorts.selectAll('circle')
+      .data(node.outputs)
+      .enter()
+      .append('circle')
+      .classed('graph-port', true)
+      .attr('r', radius)
+      .attr('cx', 0)
+      .attr('cy', (d, i) => separation * i);
+
+    const outPortsRect: SVGRect = (<any>outPorts.node()).getBBox();
+
+    //draw content
+    const contentWidth = 100;
+
+    //update
+    inPorts.attr('transform', `translate(0, ${titleRect.height + offset})`)
+    outPorts.attr('transform', `translate(${inPortsRect.width + contentWidth}, ${titleRect.height + offset})`)
+
+    rect
+      .attr('width', contentWidth + inPortsRect.width)
+      .attr('height', Math.max(inPortsRect.height, outPortsRect.height) + titleRect.height + offset);
   }
 }

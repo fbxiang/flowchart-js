@@ -35,3 +35,19 @@ svg {
 .tick line{
   stroke: gray;
 }
+
+.graph-port {
+  fill: lightblue;
+  stroke: darkcyan;
+  stroke-width: 2px;
+}
+
+.graph-node-title {
+  fill: white;
+}
+
+.graph-node-rect {
+  stroke-width: 3px;
+  stroke: gray;
+  fill: rgba(0, 0, 0, 0.5);
+}
