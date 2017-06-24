@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "frontend": "webpack-dev-server",
     "backend": "nodemon"
   },
   "author": "",
