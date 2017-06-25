@@ -31,8 +31,9 @@ export class Graph {
     if (portEnd.inLink) {
       this.removeLink(portEnd.inLink);
     }
-    this.links.push(new Link(portBegin, portEnd));
-
+    const newLink = new Link(portBegin, portEnd);
+    this.links.push(newLink);
+    this.controller.drawLink(newLink);
   }
 
   removeLink(link: Link) {

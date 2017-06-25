@@ -19,6 +19,10 @@ export class GraphView {
 
   hoveredPort: Port;
 
+  getMousePosition() {
+    return d3.mouse((<any>this.svg.node()));
+  }
+
   constructor(svg) {
     this.graph.controller = this;
     if (!svg)
@@ -29,6 +33,7 @@ export class GraphView {
     this.svgWidth = clientRect.width;
     this.svgHeight = clientRect.height;
 
+    const that = this;
     const zoomGroup = this.svg.call(d3.zoom().translateExtent([[0, 0], [this.svgWidth, this.svgHeight]])
                              .scaleExtent([1, 20])
                              .on("zoom", () => {
@@ -71,11 +76,15 @@ export class GraphView {
     })
   }
 
+  initKeys() {
+  }
+
   clearSelection() {
     this.svg.selectAll('.graph-node').classed('selected', false);
   }
 
   popupBaseMenu(event) {
+    const that = this;
     this.closeMenu();
     this.menuOpen = true;
     const menu = d3.select('body').append('div').classed('graph-menu', true)
@@ -87,21 +96,18 @@ export class GraphView {
       .append('div')
       .classed('graph-menu-option', true)
       .text(d => d)
-      .on('click', d => {
+      .on('click', function() {
         let newNode = new NodeAdd();
-        newNode.display = {x: event.pageX, y: event.pageY};
-        this.graph.addNode(newNode);
-        this.closeMenu();
+        const [x, y] = that.getMousePosition();
+        newNode.display = {x: x-20, y: y-20};
+        that.graph.addNode(newNode);
+        that.closeMenu();
       }).on('contextmenu', () => d3.event.preventDefault());
   }
 
   closeMenu() {
     this.menuOpen = false;
     d3.select('body').selectAll('.graph-menu').remove();
-  }
-
-  contextMenu(event) {
-    if (this.menuOpen) return;
   }
 
   drawNode(node: Node) {
@@ -156,6 +162,12 @@ export class GraphView {
     const inPortsY = titleRect.height + offset;
     const outPortsX = inPortsRect.width + contentWidth;
     const outPortsY = titleRect.height + offset;
+    inPorts.selectAll('circle').each((d, i) => {
+      d['_position'] = {x: inPortsX, y: inPortsY + i * separation }
+    });
+    outPorts.selectAll('circle').each((d, i) => {
+      d['_position'] = {x: outPortsX, y: outPortsY + i * separation }
+    })
 
     //update
     inPorts.attr('transform', `translate(${inPortsX}, ${inPortsY})`)
@@ -192,6 +204,8 @@ export class GraphView {
                    // update storage
                    node.display.x = newX;
                    node.display.y = newY;
+
+                   this.updateNode(node);
                  }))
 
     const that = this; // hack
@@ -199,9 +213,9 @@ export class GraphView {
     let targetY = 0;
     let sourceX = 0;
     let sourceY = 0;
-    inPorts.selectAll('circle').call(d3.drag().on('start', function() {
-      sourceX = targetX = Number(d3.select(this).attr('cx')) + inPortsX + node.display.x;
-      sourceY = targetY = Number(d3.select(this).attr('cy')) + inPortsY + node.display.y;
+    inPorts.selectAll('circle').call(d3.drag().on('start', function(d) {
+      sourceX = targetX = d['_position'].x + node.display.x;
+      sourceY = targetY = d['_position'].y + node.display.y;
       if (that.linkDrag) {
         that.linkDrag.remove();
         that.linkDrag = null;
@@ -209,23 +223,27 @@ export class GraphView {
       that.linkDrag = that.svg.append('path')
         .classed('graph-link', true)
         .attr('d', d3.linkHorizontal()
-              .source(() => [sourceX, sourceY])
+              .source(() => that.getMousePosition())
               .target(() => [targetX, targetY]));
     }).on('drag', () => {
       if (that.linkDrag) {
         sourceX += d3.event.dx;
         sourceY += d3.event.dy;
         that.linkDrag.attr('d', d3.linkHorizontal()
-                           .source(() => [sourceX, sourceY])
+                           .source(() => that.getMousePosition())
                            .target(() => [targetX, targetY]));
       }
-    }).on('end', () => {
+    }).on('end', (d) => {
       that.linkDrag.remove();
       that.linkDrag = null;
+      console.log(d);
       console.log(this.hoveredPort);
+      if (this.hoveredPort) {
+        this.graph.addLink(<any>this.hoveredPort, <any>d);
+      }
     }));
 
-    // TODO: handle out pors
+    // TODO: handle out ports
     outPorts.selectAll('circle').call(d3.drag().on('start', () => {
       console.log(d3.event, 'out');
     }));
@@ -238,19 +256,49 @@ export class GraphView {
   }
 
   updateNode(node: Node) {
+    if (!node) return;
+    node.inputs.forEach(port => this.updateLink(port.inLink));
+    node.outputs.forEach(port => port.outLinks.forEach(link => this.updateLink(link)));
   }
 
   removeNode(node: Node) {
+    if (!node) return;
     if (node._elem) {
       d3.select(node._elem).remove();
     }
   }
 
   drawLink(link: Link) {
-    // get ports
+    if (!link) return;
+    const startPosition = link.start.parentNode.display;
+    const startOffset = link.start['_position']
+    const [startX, startY] = [startPosition.x + startOffset.x, startPosition.y + startOffset.y];
+
+    const endPosition = link.end.parentNode.display;
+    const endOffset = link.end['_position']
+    const [endX, endY] = [endPosition.x + endOffset.x, endPosition.y + endOffset.y];
+    link._elem = this.svg.append('path')
+        .classed('graph-link', true)
+        .attr('d', d3.linkHorizontal()
+              .source(() => [startX, startY])
+              .target(() => [endX, endY])).node();
   }
 
   updateLink(link: Link) {
+    if (!link) return;
+    if (!link._elem) {
+      return this.drawLink(link);
+    }
+    const startPosition = link.start.parentNode.display;
+    const startOffset = link.start['_position']
+    const [startX, startY] = [startPosition.x + startOffset.x, startPosition.y + startOffset.y];
+
+    const endPosition = link.end.parentNode.display;
+    const endOffset = link.end['_position']
+    const [endX, endY] = [endPosition.x + endOffset.x, endPosition.y + endOffset.y];
+    d3.select(link._elem).attr('d', d3.linkHorizontal()
+                               .source(() => [startX, startY])
+                               .target(() => [endX, endY])).node();
   }
 
   removeLink(link: Link) {
