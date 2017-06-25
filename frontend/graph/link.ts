@@ -1,6 +1,7 @@
 import { PortOut, PortIn } from './port';
 
 export class Link {
+  _elem;
   constructor(public start: PortOut, public end: PortIn) {}
 
   getStartNode() {

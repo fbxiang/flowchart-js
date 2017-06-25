@@ -42,6 +42,10 @@ svg {
   stroke-width: 2px;
 }
 
+.graph-port:hover {
+  stroke: white;
+}
+
 .graph-node-title {
   fill: white;
 }
@@ -50,4 +54,17 @@ svg {
   stroke-width: 3px;
   stroke: gray;
   fill: rgba(0, 0, 0, 0.5);
+  transition: all 0.2s;
+}
+
+.graph-node.selected .graph-node-rect {
+  stroke: gold;
+  z-index: 10;
+}
+
+.graph-link {
+  fill: transparent;
+  stroke: white;
+  stroke-width: 3px;
+  pointer-events: none;
 }
