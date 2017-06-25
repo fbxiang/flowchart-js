@@ -13,6 +13,8 @@ body {
 svg {
   width: 100%;
   height: 100%;
+  background-color: rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
 }
 
 .graph-menu {
@@ -37,7 +39,6 @@ svg {
 }
 
 .graph-port {
-  fill: lightblue;
   stroke: darkcyan;
   stroke-width: 2px;
 }

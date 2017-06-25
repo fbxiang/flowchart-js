@@ -17,6 +17,15 @@ export class Node {
     newNode.display = {x: this.display.x, y: this.display.y};
     return newNode;
   }
+
+  toJson() {
+    return {
+      name: this.name,
+      inputs: this.inputs.map(port => ({dataType: DataType[port.dataType]})),
+      outputs: this.outputs.map(port => ({dataType: DataType[port.dataType]})),
+      display: this.display
+    }
+  }
 }
 
 export class NodeAdd extends Node {

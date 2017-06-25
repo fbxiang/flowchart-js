@@ -1,6 +1,16 @@
 import * as d3 from 'd3';
 import { Node, PortIn, PortOut, Port, Link, Graph } from '../graph';
 import { NodeAdd } from '../graph/node';
+import { DataType } from '../models';
+
+
+function linkHorizontal(source: [number, number], target: [number, number]) {
+  const offsetX = Math.abs((target[0] - source[0]) / 2);
+  const sourceHandleX = Math.max(source[0] + offsetX, source[0] + 100);
+  const targetHandleX = Math.min(target[0] - offsetX, target[0] - 100);
+  return `M${source[0]},${source[1]}C${sourceHandleX},${source[1]},${targetHandleX},${target[1]},${target[0]},${target[1]}`
+}
+
 
 export class GraphView {
   graph = new Graph();
@@ -17,7 +27,8 @@ export class GraphView {
 
   linkDrag: d3.Selection<d3.BaseType, {}, HTMLElement, any>;
 
-  hoveredPort: Port;
+  hoveredPortIn: PortIn;
+  hoveredPortOut: PortOut;
 
   getMousePosition() {
     return d3.mouse((<any>this.svg.node()));
@@ -43,6 +54,7 @@ export class GraphView {
     this.svg = zoomGroup;
     this.drawGridLines();
     this.initMenu();
+    this.initKeys();
   }
 
   drawGridLines() {
@@ -77,6 +89,11 @@ export class GraphView {
   }
 
   initKeys() {
+    d3.select('body').on('keydown', () => {
+      if (d3.event.key == 'x') {
+        this.deleteSelection();
+      }
+    })
   }
 
   clearSelection() {
@@ -113,6 +130,7 @@ export class GraphView {
   drawNode(node: Node) {
     const newNode = this.svg.append('g').classed('graph-node', true)
       .attr('transform', `translate(${node.display.x}, ${node.display.y})`)
+    newNode.datum(node);
     node['_elem'] = newNode.node();
 
     // draw background
@@ -138,7 +156,9 @@ export class GraphView {
       .classed('graph-port', true)
       .attr('r', radius)
       .attr('cx', 0)
-      .attr('cy', (d, i) => separation * i);
+      .attr('cy', (d, i) => separation * i)
+      .style('fill', (d: Port) => DataType.fillColor(d.dataType))
+      .style('stroke', (d: Port) => DataType.strokeColor(d.dataType));
 
     const inPortsRect: SVGRect = (<any>inPorts.node()).getBBox();
 
@@ -150,9 +170,22 @@ export class GraphView {
       .classed('graph-port', true)
       .attr('r', radius)
       .attr('cx', 0)
-      .attr('cy', (d, i) => separation * i);
+      .attr('cy', (d, i) => separation * i)
+      .style('fill', (d: Port) => DataType.fillColor(d.dataType))
+      .style('stroke', (d: Port) => DataType.strokeColor(d.dataType));
 
     const outPortsRect: SVGRect = (<any>outPorts.node()).getBBox();
+
+    inPorts.selectAll('circle').on('contextmenu', (d: PortIn) => {
+      d3.event.preventDefault();
+      this.graph.removeLink(d.inLink);
+    });
+    outPorts.selectAll('circle').on('contextmenu', (d: PortOut) => {
+      d3.event.preventDefault();
+      while (d.outLinks.length) {
+        this.graph.removeLink(d.outLinks[0]);
+      }
+    });
 
     //draw content
     const contentWidth = 100;
@@ -213,45 +246,65 @@ export class GraphView {
     let targetY = 0;
     let sourceX = 0;
     let sourceY = 0;
-    inPorts.selectAll('circle').call(d3.drag().on('start', function(d) {
-      sourceX = targetX = d['_position'].x + node.display.x;
-      sourceY = targetY = d['_position'].y + node.display.y;
+    inPorts.selectAll('circle').call(d3.drag().on('start', function(d: PortIn) {
+      targetX = d['_position'].x + node.display.x;
+      targetY = d['_position'].y + node.display.y;
       if (that.linkDrag) {
         that.linkDrag.remove();
         that.linkDrag = null;
       }
       that.linkDrag = that.svg.append('path')
         .classed('graph-link', true)
-        .attr('d', d3.linkHorizontal()
-              .source(() => that.getMousePosition())
-              .target(() => [targetX, targetY]));
-    }).on('drag', () => {
+        .attr('d', linkHorizontal(that.getMousePosition(), [targetX, targetY]))
+        .style('stroke', DataType.fillColor(d.dataType));
+    }).on('drag', (d: PortIn) => {
       if (that.linkDrag) {
-        sourceX += d3.event.dx;
-        sourceY += d3.event.dy;
-        that.linkDrag.attr('d', d3.linkHorizontal()
-                           .source(() => that.getMousePosition())
-                           .target(() => [targetX, targetY]));
+        that.linkDrag
+          .attr('d', linkHorizontal(that.getMousePosition(), [targetX, targetY]))
+          .style('stroke', DataType.fillColor(d.dataType));
       }
-    }).on('end', (d) => {
+    }).on('end', (d: PortIn) => {
       that.linkDrag.remove();
       that.linkDrag = null;
-      console.log(d);
-      console.log(this.hoveredPort);
-      if (this.hoveredPort) {
-        this.graph.addLink(<any>this.hoveredPort, <any>d);
+      if (this.hoveredPortOut) {
+        this.graph.addLink(this.hoveredPortOut, d);
       }
     }));
 
-    // TODO: handle out ports
-    outPorts.selectAll('circle').call(d3.drag().on('start', () => {
-      console.log(d3.event, 'out');
+    outPorts.selectAll('circle').call(d3.drag().on('start', (d: PortOut) => {
+      sourceX = d['_position'].x + node.display.x;
+      sourceY = d['_position'].y + node.display.y;
+      if (that.linkDrag) {
+        that.linkDrag.remove();
+        that.linkDrag = null;
+      }
+      that.linkDrag = that.svg.append('path')
+        .classed('graph-link', true)
+        .attr('d', linkHorizontal([sourceX, sourceY], that.getMousePosition()))
+        .style('stroke', DataType.fillColor(d.dataType));
+    }).on('drag', (d: Port) => {
+      if (that.linkDrag) {
+        that.linkDrag.attr('d', linkHorizontal([sourceX, sourceY], that.getMousePosition()))
+          .style('stroke', DataType.fillColor(d.dataType));
+      }
+    }).on('end', (d: PortOut) => {
+      that.linkDrag.remove();
+      that.linkDrag = null;
+      if (this.hoveredPortIn) {
+        this.graph.addLink(d, that.hoveredPortIn);
+      }
     }));
 
     outPorts.selectAll('circle').on('mouseover', function(d, i) {
-      that.hoveredPort = <any>d;
+      that.hoveredPortOut = <any>d;
     }).on('mouseout', () => {
-      that.hoveredPort = null;
+      that.hoveredPortOut = null;
+    });
+
+    inPorts.selectAll('circle').on('mouseover', function(d, i) {
+      that.hoveredPortIn = <any>d;
+    }).on('mouseout', () => {
+      that.hoveredPortIn = null;
     });
   }
 
@@ -278,10 +331,9 @@ export class GraphView {
     const endOffset = link.end['_position']
     const [endX, endY] = [endPosition.x + endOffset.x, endPosition.y + endOffset.y];
     link._elem = this.svg.append('path')
-        .classed('graph-link', true)
-        .attr('d', d3.linkHorizontal()
-              .source(() => [startX, startY])
-              .target(() => [endX, endY])).node();
+      .classed('graph-link', true)
+      .style('stroke', DataType.fillColor(link.start.dataType))
+      .attr('d', linkHorizontal([startX, startY], [endX, endY])).node();
   }
 
   updateLink(link: Link) {
@@ -296,14 +348,18 @@ export class GraphView {
     const endPosition = link.end.parentNode.display;
     const endOffset = link.end['_position']
     const [endX, endY] = [endPosition.x + endOffset.x, endPosition.y + endOffset.y];
-    d3.select(link._elem).attr('d', d3.linkHorizontal()
-                               .source(() => [startX, startY])
-                               .target(() => [endX, endY])).node();
+    d3.select(link._elem).attr('d', linkHorizontal([startX, startY], [endX, endY]));
   }
 
   removeLink(link: Link) {
     if (link._elem) {
       d3.select(link._elem).remove();
     }
+  }
+
+  deleteSelection() {
+    this.svg.selectAll('.selected').each((d: Node) => {
+      this.graph.removeNode(d);
+    })
   }
 }
