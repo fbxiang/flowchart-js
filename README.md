@@ -20,5 +20,8 @@ Install packages
 ### Start the frontend
 `npm run frontend`
 
+### Build and Release
+Comming soon... when I figure it out
+
 ### Notice
 There is nothing on the backend for now.
