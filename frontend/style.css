@@ -19,11 +19,13 @@ svg {
 
 .graph-menu {
   position: absolute;
-  border-radius: 2px;
-  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 5px;
+  background-color: rgba(0, 0, 0, 0.7);
+  overflow: hidden;
 }
 
 .graph-menu-option {
+  color: #dddddd;
   padding: 4px 10px;
   cursor: pointer;
   transition: all 0.1s;
@@ -31,7 +33,7 @@ svg {
 }
 
 .graph-menu-option:hover {
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 .tick line{
@@ -49,6 +51,7 @@ svg {
 
 .graph-node-title {
   fill: white;
+  cursor: default;
 }
 
 .graph-node-rect {
@@ -68,4 +71,15 @@ svg {
   stroke: white;
   stroke-width: 3px;
   pointer-events: none;
+}
+
+foreignObject input {
+  border-radius: 2px;
+  background-color: rgba(0,0,0,0.5);
+  color: white;
+  width: 90%;
+  padding: 4%;
+  outline: none;
+  border: 0;
+  margin: 0;
 }

@@ -1,31 +1,30 @@
 import * as d3 from 'd3';
 import { Node, PortIn, PortOut, Port, Link, Graph } from '../graph';
-import { NodeAdd } from '../graph/node';
+import { NodeClassList, TextInput } from '../graph/node';
 import { DataType } from '../models';
 
 
 function linkHorizontal(source: [number, number], target: [number, number]) {
   const offsetX = Math.abs((target[0] - source[0]) / 2);
-  const sourceHandleX = Math.max(source[0] + offsetX, source[0] + 100);
-  const targetHandleX = Math.min(target[0] - offsetX, target[0] - 100);
+  const sourceHandleX = source[0] + offsetX;
+  const targetHandleX = target[0] - offsetX;
   return `M${source[0]},${source[1]}C${sourceHandleX},${source[1]},${targetHandleX},${target[1]},${target[0]},${target[1]}`
 }
 
+type d3Selection = d3.Selection<d3.BaseType, {}, HTMLElement, any>;
 
 export class GraphView {
   graph = new Graph();
   menuOpen = false;
 
-  svg: d3.Selection<d3.BaseType, {}, HTMLElement, any>;
-  canvas: d3.Selection<d3.BaseType, {}, HTMLElement, any>;
+  svg: d3Selection;
+  canvas: d3Selection;
 
   svgWidth = 0;
   svgHeight = 0;
   gridWidth = 20;
 
-  baseMenuOptions = ['Add Test Node'];
-
-  linkDrag: d3.Selection<d3.BaseType, {}, HTMLElement, any>;
+  linkDrag: d3Selection;
 
   hoveredPortIn: PortIn;
   hoveredPortOut: PortOut;
@@ -104,18 +103,18 @@ export class GraphView {
     const that = this;
     this.closeMenu();
     this.menuOpen = true;
+    const [x, y] = that.getMousePosition();
     const menu = d3.select('body').append('div').classed('graph-menu', true)
       .style('left', event.pageX + 'px')
       .style('top', event.pageY + 'px');
     menu.selectAll('div')
-      .data(this.baseMenuOptions)
+      .data(Object.keys(NodeClassList))
       .enter()
       .append('div')
       .classed('graph-menu-option', true)
-      .text(d => d)
-      .on('click', function() {
-        let newNode = new NodeAdd();
-        const [x, y] = that.getMousePosition();
+      .text(d => NodeClassList[d].name)
+      .on('click', function(d) {
+        let newNode = new NodeClassList[d]();
         newNode.display = {x: x-20, y: y-20};
         that.graph.addNode(newNode);
         that.closeMenu();
@@ -127,11 +126,51 @@ export class GraphView {
     d3.select('body').selectAll('.graph-menu').remove();
   }
 
+  drawTextInputs(inputs: TextInput[], parentSelection: d3Selection) {
+    const width = inputs.reduce((accu, input) => Math.max(accu, input.display.width), 0);
+    const totalHeight = inputs.reduce((accu, input) => accu + input.display.height, 0);
+
+    const parent = parentSelection.append('foreignObject').attr('width', 1000).attr('height', 1000)
+    const inputGroup = parent.append('xhtml:div').style('width', width);
+    inputGroup.selectAll('input')
+      .data(inputs)
+      .enter()
+      .append('xhtml:input')
+      .attr('placeholder', d => d.name)
+      .style('width', '100%')
+      .style('height', d => d.display.height * 0.9 + 'px')
+      .style('padding', d => d.display.height * 0.1 + 'px')
+      .on('input', function(d) {
+        d.text = (<any>this).value;
+      }).on('focusout', function(d) {
+        console.log(d.checker(d.text))
+        if (!d.checker(d.text)) {
+          d.text = d.defaultText;
+          (<any>this).value = d.text;
+        }
+      }).on('keyup', function(d) {
+        if (d3.event.keyCode == 13) {
+          if (!d.checker(d.text)) {
+            d.text = d.defaultText;
+            (<any>this).value = d.text;
+          }
+          (<any>this).blur();
+        }
+      });
+
+    parent.attr('width', width).attr('height', d => totalHeight);
+    return parent;
+  }
+
   drawNode(node: Node) {
     const newNode = this.svg.append('g').classed('graph-node', true)
       .attr('transform', `translate(${node.display.x}, ${node.display.y})`)
     newNode.datum(node);
     node['_elem'] = newNode.node();
+
+    newNode.on('contextmenu', () => {
+      d3.event.preventDefault();
+    })
 
     // draw background
     const rect = newNode.append('rect')
@@ -160,6 +199,16 @@ export class GraphView {
       .style('fill', (d: Port) => DataType.fillColor(d.dataType))
       .style('stroke', (d: Port) => DataType.strokeColor(d.dataType));
 
+    inPorts.selectAll('text')
+      .data(node.inputs)
+      .enter()
+      .append('text')
+      .classed('graph-port-title', true)
+      .attr('x', 2 * radius)
+      .attr('y', (d, i) => separation * i + radius)
+      .style('fill', '#dddddd')
+      .text(d => d.name);
+
     const inPortsRect: SVGRect = (<any>inPorts.node()).getBBox();
 
     const outPorts = newNode.append('g');
@@ -173,6 +222,20 @@ export class GraphView {
       .attr('cy', (d, i) => separation * i)
       .style('fill', (d: Port) => DataType.fillColor(d.dataType))
       .style('stroke', (d: Port) => DataType.strokeColor(d.dataType));
+
+    outPorts.selectAll('text')
+      .data(node.outputs)
+      .enter()
+      .append('text')
+      .classed('graph-port-title', true)
+      .attr('y', (d, i) => separation * i + radius)
+      .style('fill', '#dddddd')
+      .text(d => d.name)
+
+    outPorts.selectAll('text')
+      .attr('x', function(d) {
+        return -(<any>this).getBBox().width - 2 * radius;
+      });
 
     const outPortsRect: SVGRect = (<any>outPorts.node()).getBBox();
 
@@ -188,12 +251,24 @@ export class GraphView {
     });
 
     //draw content
-    const contentWidth = 100;
+    const textInptus = this.drawTextInputs(node.textInputs, newNode);
 
+    const contentMinWidth = Math.max(titleRect.width + 20, 100);
+    const contentPadding = 10;
+
+    const inputWidth = Number(textInptus.attr('width'));
+    const inputHeight = Number(textInptus.attr('height'));
+
+    const contentWidth = Math.max(inputWidth + contentPadding * 2, contentMinWidth);
+    const contentHeight = inputHeight + contentPadding * 2;
+
+    const offsetX = (contentWidth - inputWidth) / 2 + inPortsRect.width;
+    const offsetY = (contentHeight - inputHeight) / 2 + titleRect.height;
+    textInptus.attr('transform', `translate(${offsetX},${offsetY})`);
 
     const inPortsX = 0;
     const inPortsY = titleRect.height + offset;
-    const outPortsX = inPortsRect.width + contentWidth;
+    const outPortsX = inPortsRect.width + contentWidth + outPortsRect.width;
     const outPortsY = titleRect.height + offset;
     inPorts.selectAll('circle').each((d, i) => {
       d['_position'] = {x: inPortsX, y: inPortsY + i * separation }
@@ -206,8 +281,9 @@ export class GraphView {
     inPorts.attr('transform', `translate(${inPortsX}, ${inPortsY})`)
     outPorts.attr('transform', `translate(${outPortsX}, ${outPortsY})`)
 
-    rect.attr('width', contentWidth + inPortsRect.width)
-      .attr('height', Math.max(inPortsRect.height, outPortsRect.height) + titleRect.height + offset);
+    rect.attr('width', contentWidth + inPortsRect.width + outPortsRect.width)
+      .attr('height', Math.max(inPortsRect.height + offset, outPortsRect.height + offset, contentHeight)
+            + titleRect.height);
 
     // final size
     const nodeRect: SVGRect = (<any>newNode.node()).getBBox();
@@ -227,18 +303,13 @@ export class GraphView {
                    // update position
                    let newX = node.display.x + d3.event.dx;
                    let newY = node.display.y + d3.event.dy;
+
                    newX = Math.max(newX, 0);
                    newY = Math.max(newY, 0);
                    newX = Math.min(newX, this.svgWidth - nodeRect.width);
                    newY = Math.min(newY, this.svgHeight - nodeRect.height);
 
-                   newNode.attr('transform', `translate(${newX}, ${newY})`)
-
-                   // update storage
-                   node.display.x = newX;
-                   node.display.y = newY;
-
-                   this.updateNode(node);
+                   this.updateNodePosition(node, newX, newY);
                  }))
 
     const that = this; // hack
@@ -308,8 +379,11 @@ export class GraphView {
     });
   }
 
-  updateNode(node: Node) {
+  updateNodePosition(node: Node, newX, newY) {
     if (!node) return;
+    d3.select(node._elem).attr('transform', `translate(${newX}, ${newY})`)
+    node.display.x = newX;
+    node.display.y = newY;
     node.inputs.forEach(port => this.updateLink(port.inLink));
     node.outputs.forEach(port => port.outLinks.forEach(link => this.updateLink(link)));
   }

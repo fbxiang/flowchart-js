@@ -8,12 +8,6 @@ export class Graph {
   links: Link[] = [];
   controller: GraphView
 
-  refreshNodeDisplay(node: Node) {
-    if (node._elem) {
-      this.controller.updateNode(node);
-    }
-  }
-
   addNode(newNode: Node) {
     if (!newNode) return;
     newNode['graph'] = this;
@@ -40,6 +34,7 @@ export class Graph {
 
   addLink(portBegin: PortOut, portEnd: PortIn) {
     if (!portBegin || !portEnd) return;
+    if (portBegin.dataType != portEnd.dataType) return;
     if (portBegin.parentNode === portEnd.parentNode)
       return;
     if (portEnd.inLink) {

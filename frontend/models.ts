@@ -3,7 +3,8 @@ export enum DataType {
   CSV,
   Text,
   Number,
-  String
+  String,
+  Execution
 }
 
 export namespace DataType {
@@ -11,9 +12,10 @@ export namespace DataType {
     switch (dataType) {
     case DataType.Json: return 'yellow';
     case DataType.CSV: return 'green';
-    case DataType.Text: return 'white';
+    case DataType.Text: return 'lightgray';
     case DataType.Number: return 'blueviolet';
-    case DataType.String: return 'gray';
+    case DataType.String: return '#669900';
+    case DataType.Execution: return 'white';
     default: return 'black';
     }
   }
@@ -23,7 +25,8 @@ export namespace DataType {
     case DataType.CSV: return 'darkgreen';
     case DataType.Text: return 'gray';
     case DataType.Number: return 'purple';
-    case DataType.String: return 'black';
+    case DataType.String: return '#558800';
+    case DataType.Execution: return 'white';
     default: return 'black';
     }
   }

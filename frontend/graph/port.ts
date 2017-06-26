@@ -3,17 +3,19 @@ import { Node } from './node';
 import { Link } from './link';
 
 export class Port {
-  constructor(public dataType: DataType, public parentNode: Node) {}
+  constructor(public dataType: DataType, public parentNode: Node, public name='') {}
 }
 
 export class PortIn extends Port{
-  constructor(public dataType: DataType, public parentNode: Node, public inLink = null) {
-    super(dataType, parentNode);
+  inLink: Link = null;
+  constructor(public dataType: DataType, public parentNode: Node, public name='') {
+    super(dataType, parentNode, name);
   }
 }
 
 export class PortOut extends Port {
-    constructor(public dataType: DataType, public parentNode: Node, public outLinks = []) {
-      super(dataType, parentNode);
+  outLinks: Link[] = [];
+  constructor(public dataType: DataType, public parentNode: Node, public name='') {
+    super(dataType, parentNode, name);
   }
 }
