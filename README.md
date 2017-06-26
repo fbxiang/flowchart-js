@@ -19,6 +19,7 @@ Install packages
 
 ### Start the frontend
 `npm run frontend`
+visit [http://localhost:8080/](http://localhost:8080/) and have fun.
 
 ### Build and Release
 Comming soon... when I figure it out
