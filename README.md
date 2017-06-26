@@ -13,6 +13,7 @@ Install Nodejs.
 ### Install dependencies
 Install npm global dependencies  
 `npm install -g typescript webpack webpack-dev-server nodemon`  
+Also install anything that I might have missed  
 Install packages  
 `npm install`  
 
