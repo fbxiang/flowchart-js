@@ -45,6 +45,7 @@ export class Graph {
         this.updateQueue.forEach(node => this.updateNode(node));
         this.updateQueue = new Set();
       }, 0);
+      console.log(this.toJson());
     }
   }
 

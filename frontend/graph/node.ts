@@ -7,6 +7,11 @@ export class TextInput {
               public defaultText = "",
               public checker: (text: string) => boolean = (_) => true,
               public display = {width: 60, height: 20}) {}
+  clone() {
+    let newInput = new TextInput(this.name, this.defaultText, this.checker, this.display);
+    newInput.text = this.text;
+    return newInput;
+  }
 }
 
 export class Node {
@@ -23,6 +28,7 @@ export class Node {
 
   clone() {
     let newNode = new Node();
+    newNode.textInputs = this.textInputs.map(textInput => textInput.clone());
     newNode.inputs = this.inputs.map(port => new PortIn(port.dataType, newNode));
     newNode.outputs = this.outputs.map(port => new PortOut(port.dataType, newNode));
     newNode.name = this.name;
@@ -33,6 +39,7 @@ export class Node {
   toJson() {
     return {
       name: this.name,
+      textInputs: this.textInputs.map(textInput => ({name: textInput.name, text: textInput.text})),
       inputs: this.inputs.map(port => ({dataType: DataType[port.dataType]})),
       outputs: this.outputs.map(port => ({dataType: DataType[port.dataType]})),
       display: this.display
@@ -142,12 +149,13 @@ export class NodePrint extends Node {
   constructor() {
     super();
     this.name = "print";
+    this.inputs.push(new PortIn(DataType.Execution, this));
     this.addInput();
   }
 
   update() {
     console.log(this.inputs);
-    this.inputs = this.inputs.filter(input => input.inLink);
+    this.inputs = this.inputs.filter(input => input.inLink || input.dataType == DataType.Execution);
     this.addInput();
   }
 
@@ -245,4 +253,41 @@ export class NodeBranch extends Node {
   }
 }
 
-export const NodeClassList = {NodeAdd, NodeMultiply, NodeSigmoid, NodeTanh, NodeNumber, NodePrint, NodeNumberToString, NodeCommand, NodeStringCompare, NodeJoin, NodeBranch, AnyToBoolean}
+export class NodeString extends Node {
+  constructor() {
+    super();
+    this.name = 'String';
+    this.textInputs.push(new TextInput('string', '', () => true, {width: 120, height: 20}));
+    this.outputs.push(new PortOut(DataType.String, this));
+  }
+}
+
+export class NodeStringConcat extends Node {
+  constructor() {
+    super();
+    this.name = 'String Concat';
+    this.addInput();
+    this.outputs.push(new PortOut(DataType.String, this));
+  }
+
+  addInput() {
+    this.inputs.push(new PortIn(DataType.String, this));
+  }
+
+  update() {
+    this.inputs = this.inputs.filter(input => input.inLink);
+    this.addInput();
+  }
+}
+
+export class NodeStart extends Node {
+  constructor() {
+    super();
+    this.name = 'Start';
+    this.outputs.push(new PortOut(DataType.Execution, this));
+  }
+}
+
+
+
+export const NodeClassList = {NodeAdd, NodeMultiply, NodeSigmoid, NodeTanh, NodeNumber, NodePrint, NodeNumberToString, NodeCommand, NodeStringCompare, NodeJoin, NodeBranch, AnyToBoolean, NodeString, NodeStringConcat, NodeStart}
