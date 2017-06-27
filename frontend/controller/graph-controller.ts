@@ -162,10 +162,10 @@ export class GraphView {
     return parent;
   }
 
-  drawNode(node: Node) {
+  drawNode(node: Node, selected=false) {
     const newNode = this.svg.append('g').classed('graph-node', true)
       .attr('transform', `translate(${node.display.x}, ${node.display.y})`)
-    newNode.datum(node);
+    newNode.datum(node).classed('selected', selected);
     node['_elem'] = newNode.node();
 
     newNode.on('contextmenu', () => {
@@ -388,10 +388,19 @@ export class GraphView {
     node.outputs.forEach(port => port.outLinks.forEach(link => this.updateLink(link)));
   }
 
+  updateNode(node: Node) {
+    if (!node) return;
+    if (!node._elem) return;
+    const selected = d3.select(node._elem).classed('selected');
+    d3.select(node._elem).remove();
+    this.drawNode(node, selected);
+  }
+
   removeNode(node: Node) {
     if (!node) return;
     if (node._elem) {
       d3.select(node._elem).remove();
+      node._elem = null;
     }
   }
 

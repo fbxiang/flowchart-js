@@ -4,7 +4,9 @@ export enum DataType {
   Text,
   Number,
   String,
-  Execution
+  Execution,
+  Boolean,
+  Any
 }
 
 export namespace DataType {
@@ -16,6 +18,8 @@ export namespace DataType {
     case DataType.Number: return 'blueviolet';
     case DataType.String: return '#669900';
     case DataType.Execution: return 'white';
+    case DataType.Boolean: return 'cyan';
+    case DataType.Any: return 'white';
     default: return 'black';
     }
   }
@@ -27,7 +31,17 @@ export namespace DataType {
     case DataType.Number: return 'purple';
     case DataType.String: return '#558800';
     case DataType.Execution: return 'white';
+    case DataType.Boolean: return 'forestgreen';
+    case DataType.Any: return 'black';
     default: return 'black';
+    }
+  }
+
+  export function canCast(a: DataType, b:DataType) {
+    if (b == DataType.Any && a != DataType.Execution)
+      return true;
+    else {
+      return a == b
     }
   }
 }

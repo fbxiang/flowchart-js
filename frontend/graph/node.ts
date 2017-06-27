@@ -18,6 +18,9 @@ export class Node {
 
   _elem; // dom element reference
 
+  // called to update the node
+  update() { }
+
   clone() {
     let newNode = new Node();
     newNode.inputs = this.inputs.map(port => new PortIn(port.dataType, newNode));
@@ -142,6 +145,12 @@ export class NodePrint extends Node {
     this.addInput();
   }
 
+  update() {
+    console.log(this.inputs);
+    this.inputs = this.inputs.filter(input => input.inLink);
+    this.addInput();
+  }
+
   addInput() {
     this.inputs.push(new PortIn(DataType.String, this));
   }
@@ -183,32 +192,57 @@ export class NodeStringCompare extends Node {
   }
 }
 
-export class NodeParallel extends NodeExecution {
-  constructor() {
-    super();
-    this.name = "Parallel";
-    this.outputs.push(new PortOut(DataType.Execution, this));
-  }
-}
-
 export class NodeJoin extends NodeExecution {
   constructor() {
     super();
-    this.name = "Join";
+    this.name = "Branch Join";
+  }
+
+  update() {
+    this.inputs = this.inputs.filter(input => input.inLink);
     this.inputs.push(new PortIn(DataType.Execution, this));
   }
 }
 
-export class NodeIf extends Node {
+export class AnyToBoolean extends Node {
   constructor() {
     super();
-    this.name = "If";
-    this.inputs.push(new PortIn(DataType.Execution, this));
-    this.inputs.push(new PortIn(DataType.Number, this));
-    this.outputs.push(new PortOut(DataType.Execution, this, 'then'));
-    this.outputs.push(new PortOut(DataType.Execution, this, 'else'));
+    this.name = "ToBoolean";
+    this.inputs.push(new PortIn(DataType.Any, this));
+    this.outputs.push(new PortOut(DataType.Boolean, this));
   }
 }
 
+export class NodeBranch extends Node {
+  constructor() {
+    super();
+    this.name = "Branch";
+    this.inputs.push(new PortIn(DataType.Execution, this));
+    this.inputs.push(new PortIn(DataType.Boolean, this, 'condition'));
+    this.outputs.push(new PortOut(DataType.Execution, this, 'default'));
+  }
 
-export const NodeClassList = {NodeAdd, NodeMultiply, NodeSigmoid, NodeTanh, NodeNumber, NodePrint, NodeNumberToString, NodeCommand, NodeStringCompare, NodeParallel, NodeJoin, NodeIf}
+  addInput() {
+    this.inputs.push(new PortIn(DataType.Boolean, this, 'condition'));
+  }
+
+  addOutput() {
+    this.outputs.push(new PortOut(DataType.Execution, this, 'case'));
+  }
+
+  update() {
+    for (let i = 1; i < this.inputs.length - 1; i++) {
+      if (!this.inputs[i].inLink && !this.outputs[i].outLinks.length) {
+        this.inputs.splice(i, 1);
+        this.outputs.splice(i, 1);
+        i -= 1;
+      }
+    }
+    if (this.inputs[this.inputs.length - 1].inLink) {
+      this.addInput();
+      this.addOutput();
+    }
+  }
+}
+
+export const NodeClassList = {NodeAdd, NodeMultiply, NodeSigmoid, NodeTanh, NodeNumber, NodePrint, NodeNumberToString, NodeCommand, NodeStringCompare, NodeJoin, NodeBranch, AnyToBoolean}
