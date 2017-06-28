@@ -1,5 +1,6 @@
 import { DataType } from '../models';
 import { PortIn, PortOut } from './port';
+import { Menu } from './menu';
 
 export class TextInput {
   text = "";
@@ -288,6 +289,26 @@ export class NodeStart extends Node {
   }
 }
 
+export const NodeClassList = {NodeNumber, NodePrint, NodeNumberToString, NodeCommand, NodeStringCompare, NodeJoin, NodeBranch, AnyToBoolean, NodeString, NodeStringConcat, NodeStart}
 
+Menu.instance.addOption('Control');
+Menu.instance.addOption('Util');
+Menu.instance.addOption('Math');
 
-export const NodeClassList = {NodeAdd, NodeMultiply, NodeSigmoid, NodeTanh, NodeNumber, NodePrint, NodeNumberToString, NodeCommand, NodeStringCompare, NodeJoin, NodeBranch, AnyToBoolean, NodeString, NodeStringConcat, NodeStart}
+Menu.instance.addNodeClassToOption('Add', NodeAdd, 'Math');
+Menu.instance.addNodeClassToOption('Multiply', NodeMultiply, 'Math');
+Menu.instance.addNodeClassToOption('Sigmoid', NodeSigmoid, 'Math');
+Menu.instance.addNodeClassToOption('Tanh', NodeTanh, 'Math');
+Menu.instance.addNodeClassToOption('Number', NodeNumber, 'Math');
+
+Menu.instance.addNodeClassToOption('Print', NodePrint, 'Util');
+Menu.instance.addNodeClassToOption('Command', NodeCommand, 'Util');
+Menu.instance.addNodeClassToOption('String compare', NodeStringCompare, 'Util');
+Menu.instance.addNodeClassToOption('Concatenate', NodeStringConcat, 'Util');
+Menu.instance.addNodeClassToOption('Number to string', NodeNumberToString, 'Util');
+Menu.instance.addNodeClassToOption('To Boolean', AnyToBoolean, 'Util');
+Menu.instance.addNodeClassToOption('String', NodeString, 'Util');
+
+Menu.instance.addNodeClassToOption('Start', NodeStart, 'Control');
+Menu.instance.addNodeClassToOption('Join', NodeJoin, 'Control');
+Menu.instance.addNodeClassToOption('Branch', NodeBranch, 'Control');

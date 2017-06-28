@@ -19,14 +19,17 @@ svg {
 
 .graph-menu {
   position: absolute;
-  border-radius: 5px;
+  /* border-radius: 5px; */
+  border: 1px solid gray;
   background-color: rgba(0, 0, 0, 0.7);
   overflow: hidden;
+  transform-origin: 0 0;
 }
 
 .graph-menu-option {
+  font-family: Helvetica;
   color: #dddddd;
-  padding: 4px 10px;
+  padding: 6px 10px;
   cursor: pointer;
   transition: all 0.1s;
   font-size: 1.3em;

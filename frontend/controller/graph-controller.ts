@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import { Node, PortIn, PortOut, Port, Link, Graph } from '../graph';
 import { NodeClassList, TextInput } from '../graph/node';
 import { DataType } from '../models';
-
+import { Menu, NodeClass, OptionList } from '../graph/menu';
 
 function linkHorizontal(source: [number, number], target: [number, number]) {
   const offsetX = Math.abs((target[0] - source[0]) / 2);
@@ -78,13 +78,83 @@ export class GraphView {
   initMenu() {
     this.canvas.on('contextmenu', () => {
       d3.event.preventDefault();
-      this.popupBaseMenu(d3.event);
+      // this.popupBaseMenu(d3.event);
+      this.drawMenu();
     });
     this.canvas.on('click', () => {
       console.log('click');
       this.clearSelection();
       this.closeMenu();
     })
+  }
+
+  menuStack: d3Selection[] = [];
+  drawNextMenu(activeOption: d3Selection) {
+    const that = this;
+
+    console.log( (<any>activeOption.node()).getBoundingClientRect());
+    let {top, right} = (<any>activeOption.node()).getBoundingClientRect();
+
+    let [x, y] = [right, top];
+
+    const layer = this.menuStack.length;
+    const menuSelection = d3.select('body').append('div').classed('graph-menu', true).classed('hidden', true)
+      .style('left', x + 'px')
+      .style('top', y + 'px');
+    menuSelection.selectAll('div')
+      .data((activeOption.datum() as OptionList).options)
+      .enter()
+      .append('div')
+      .classed('graph-menu-option', true)
+      .text(d => d.name)
+      .on('mouseover', function(d) {
+        that.popMenuStackTo(layer + 1);
+        if ((<any>d).options) {
+          that.drawNextMenu(d3.select(this));
+        }
+      })
+      .on('click', function(d) {
+        if ((<any>d).nodeClass) {
+          let newNode = new (<any>d).nodeClass();
+          newNode.display = {x: x-20, y: y-20};
+          that.graph.addNode(newNode);
+          that.closeMenu();
+        }
+      })
+    menuSelection.style('transform', 'scale(0)').transition().duration(200).style('transform', 'scale(1)');
+    this.menuStack.push(menuSelection);
+  }
+
+  popMenuStackTo(layer: number) {
+    console.log('pop to', layer);
+    while (this.menuStack.length > layer) {
+      this.menuStack.pop().remove();
+    }
+  }
+
+  drawMenu() {
+    const menu = Menu.instance;
+    const that = this;
+    this.closeMenu();
+    const [x, y] = that.getMousePosition();
+    const menuSelection = d3.select('body').append('div').classed('graph-menu', true)
+      .style('left', d3.event.pageX + 'px')
+      .style('top', d3.event.pageY + 'px');
+    menuSelection.selectAll('div')
+      .data(menu.options)
+      .enter()
+      .append('div')
+      .classed('graph-menu-option', true)
+      .text(d => d.name)
+
+    menuSelection.style('transform', 'scale(0)').transition().duration(200)
+      .style('transform', 'scale(1)')
+      .on('end', () => menuSelection.selectAll('div')
+          .on('mouseover', function(d) {
+            that.popMenuStackTo(1);
+            that.drawNextMenu(d3.select(this));
+          }));
+    this.menuStack.push(menuSelection);
   }
 
   initKeys() {
@@ -124,6 +194,7 @@ export class GraphView {
   closeMenu() {
     this.menuOpen = false;
     d3.select('body').selectAll('.graph-menu').remove();
+    this.menuStack = [];
   }
 
   drawTextInputs(inputs: TextInput[], parentSelection: d3Selection) {
