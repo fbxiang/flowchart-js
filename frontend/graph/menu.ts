@@ -21,4 +21,17 @@ export class Menu {
       option.options.push({name: nodeName, nodeClass: nodeClass});
     }
   }
+
+  search(keyword: string, options=this.options) {
+    keyword = keyword.toLowerCase();
+    let results = [];
+    for (let option of options) {
+      if ((option as OptionList).options) {
+        results = results.concat(this.search(keyword, (option as OptionList).options));
+      } else if (option.name.toLowerCase().includes(keyword)) {
+        results.push(option);
+      }
+    }
+    return results;
+  }
 }

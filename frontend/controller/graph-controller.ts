@@ -92,7 +92,6 @@ export class GraphView {
   drawNextMenu(activeOption: d3Selection) {
     const that = this;
 
-    console.log( (<any>activeOption.node()).getBoundingClientRect());
     let {top, right} = (<any>activeOption.node()).getBoundingClientRect();
 
     let [x, y] = [right, top];
@@ -140,21 +139,49 @@ export class GraphView {
     const menuSelection = d3.select('body').append('div').classed('graph-menu', true)
       .style('left', d3.event.pageX + 'px')
       .style('top', d3.event.pageY + 'px');
-    menuSelection.selectAll('div')
-      .data(menu.options)
-      .enter()
-      .append('div')
-      .classed('graph-menu-option', true)
-      .text(d => d.name)
 
+    let drawMenuOptions = (options) => {
+      menuSelection.selectAll('div.graph-menu-option').remove();
+      menuSelection.selectAll('div.graph-menu-option')
+        .data(options)
+        .enter()
+        .append('div')
+        .classed('graph-menu-option', true)
+        .text((d:any) => d.name)
+        .on('mouseover', function(d) {
+          that.popMenuStackTo(1);
+          if ((<any>d).options) {
+            that.drawNextMenu(d3.select(this));
+          }
+        })
+       .on('click', function(d) {
+          if ((<any>d).nodeClass) {
+            let newNode = new (<any>d).nodeClass();
+            newNode.display = {x: x-20, y: y-20};
+            that.graph.addNode(newNode);
+            that.closeMenu();
+          }
+        })
+    }
+
+    const searchInput = menuSelection.append('input').classed('graph-menu-search', true)
+      .attr('placeholder', 'search...')
+      .on('input', function() {
+        that.popMenuStackTo(1);
+        if ((<any>this).value) {
+          drawMenuOptions(menu.search((<any>this).value));
+        } else {
+          drawMenuOptions(menu.options);
+        }
+       });
+    (<any>searchInput.node()).focus();
+
+    drawMenuOptions(menu.options);
     menuSelection.style('transform', 'scale(0)').transition().duration(200)
       .style('transform', 'scale(1)')
-      .on('end', () => menuSelection.selectAll('div')
-          .on('mouseover', function(d) {
-            that.popMenuStackTo(1);
-            that.drawNextMenu(d3.select(this));
-          }));
+      .on('end', () => menuSelection.selectAll('div'));
     this.menuStack.push(menuSelection);
+
   }
 
   initKeys() {

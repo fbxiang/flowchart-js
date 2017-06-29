@@ -26,6 +26,15 @@ svg {
   transform-origin: 0 0;
 }
 
+input.graph-menu-search {
+  margin: 5px;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 5px;
+  outline: none;
+  border: none;
+  color: white;
+}
+
 .graph-menu-option {
   font-family: Helvetica;
   color: #dddddd;
