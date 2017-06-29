@@ -27,6 +27,8 @@ export class Node {
   // called to update the node
   update() { }
 
+  getClassId() {}
+
   clone() {
     let newNode = new Node();
     newNode.textInputs = this.textInputs.map(textInput => textInput.clone());
@@ -39,10 +41,11 @@ export class Node {
 
   toJson() {
     return {
+      id: this.getClassId(),
       name: this.name,
       textInputs: this.textInputs.map(textInput => ({name: textInput.name, text: textInput.text})),
-      inputs: this.inputs.map(port => ({dataType: DataType[port.dataType]})),
-      outputs: this.outputs.map(port => ({dataType: DataType[port.dataType]})),
+      inputs: this.inputs.map(port => ({name: port.name, dataType: DataType[port.dataType]})),
+      outputs: this.outputs.map(port => ({name: port.name, dataType: DataType[port.dataType]})),
       display: this.display
     }
   }
@@ -289,26 +292,25 @@ export class NodeStart extends Node {
   }
 }
 
-export const NodeClassList = {NodeNumber, NodePrint, NodeNumberToString, NodeCommand, NodeStringCompare, NodeJoin, NodeBranch, AnyToBoolean, NodeString, NodeStringConcat, NodeStart}
 
 Menu.instance.addOption('Control');
 Menu.instance.addOption('Util');
 Menu.instance.addOption('Math');
 
-Menu.instance.addNodeClassToOption('Add', NodeAdd, 'Math');
-Menu.instance.addNodeClassToOption('Multiply', NodeMultiply, 'Math');
-Menu.instance.addNodeClassToOption('Sigmoid', NodeSigmoid, 'Math');
-Menu.instance.addNodeClassToOption('Tanh', NodeTanh, 'Math');
-Menu.instance.addNodeClassToOption('Number', NodeNumber, 'Math');
+Menu.instance.registerNodeClass('NodeAdd', 'Add', NodeAdd, 'Math');
+Menu.instance.registerNodeClass('NodeMultiply', 'Multiply', NodeMultiply, 'Math');
+Menu.instance.registerNodeClass('NodeSigmoid', 'Sigmoid', NodeSigmoid, 'Math');
+Menu.instance.registerNodeClass('NodeTanh', 'Tanh', NodeTanh, 'Math');
+Menu.instance.registerNodeClass('NodeNumber', 'Number', NodeNumber, 'Math');
 
-Menu.instance.addNodeClassToOption('Print', NodePrint, 'Util');
-Menu.instance.addNodeClassToOption('Command', NodeCommand, 'Util');
-Menu.instance.addNodeClassToOption('String compare', NodeStringCompare, 'Util');
-Menu.instance.addNodeClassToOption('Concatenate', NodeStringConcat, 'Util');
-Menu.instance.addNodeClassToOption('Number to string', NodeNumberToString, 'Util');
-Menu.instance.addNodeClassToOption('To Boolean', AnyToBoolean, 'Util');
-Menu.instance.addNodeClassToOption('String', NodeString, 'Util');
+Menu.instance.registerNodeClass('NodePrint', 'Print', NodePrint, 'Util');
+Menu.instance.registerNodeClass('NodeCommand', 'Command', NodeCommand, 'Util');
+Menu.instance.registerNodeClass('NodeStringCompare', 'String compare', NodeStringCompare, 'Util');
+Menu.instance.registerNodeClass('NodeStringConcat', 'Concatenate', NodeStringConcat, 'Util');
+Menu.instance.registerNodeClass('NodeNumberToString', 'Number to string', NodeNumberToString, 'Util');
+Menu.instance.registerNodeClass('NodeToBoolean', 'To Boolean', AnyToBoolean, 'Util');
+Menu.instance.registerNodeClass('NodeString', 'String', NodeString, 'Util');
 
-Menu.instance.addNodeClassToOption('Start', NodeStart, 'Control');
-Menu.instance.addNodeClassToOption('Join', NodeJoin, 'Control');
-Menu.instance.addNodeClassToOption('Branch', NodeBranch, 'Control');
+Menu.instance.registerNodeClass('NodeControlStart', 'Start', NodeStart, 'Control');
+Menu.instance.registerNodeClass('NodeControlJoin', 'Join', NodeJoin, 'Control');
+Menu.instance.registerNodeClass('NodeControlBranch', 'Branch', NodeBranch, 'Control');

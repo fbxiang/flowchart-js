@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { Node, PortIn, PortOut, Port, Link, Graph } from '../graph';
-import { NodeClassList, TextInput } from '../graph/node';
+import { TextInput } from '../graph/node';
 import { DataType } from '../models';
 import { Menu, NodeClass, OptionList } from '../graph/menu';
 
@@ -125,7 +125,6 @@ export class GraphView {
   }
 
   popMenuStackTo(layer: number) {
-    console.log('pop to', layer);
     while (this.menuStack.length > layer) {
       this.menuStack.pop().remove();
     }
@@ -196,28 +195,6 @@ export class GraphView {
     this.svg.selectAll('.graph-node').classed('selected', false);
   }
 
-  popupBaseMenu(event) {
-    const that = this;
-    this.closeMenu();
-    this.menuOpen = true;
-    const [x, y] = that.getMousePosition();
-    const menu = d3.select('body').append('div').classed('graph-menu', true)
-      .style('left', event.pageX + 'px')
-      .style('top', event.pageY + 'px');
-    menu.selectAll('div')
-      .data(Object.keys(NodeClassList))
-      .enter()
-      .append('div')
-      .classed('graph-menu-option', true)
-      .text(d => NodeClassList[d].name)
-      .on('click', function(d) {
-        let newNode = new NodeClassList[d]();
-        newNode.display = {x: x-20, y: y-20};
-        that.graph.addNode(newNode);
-        that.closeMenu();
-      }).on('contextmenu', () => d3.event.preventDefault());
-  }
-
   closeMenu() {
     this.menuOpen = false;
     d3.select('body').selectAll('.graph-menu').remove();
@@ -238,6 +215,7 @@ export class GraphView {
       .style('width', '100%')
       .style('height', d => d.display.height * 0.9 + 'px')
       .style('padding', d => d.display.height * 0.1 + 'px')
+      .each(function(d) { (<any>this).value = d.text })
       .on('input', function(d) {
         d.text = (<any>this).value;
       }).on('focusout', function(d) {

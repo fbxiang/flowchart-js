@@ -1,7 +1,8 @@
-import { Node } from './node';
+import { Node, TextInput } from './node';
 import { Link } from './link';
 import { Port, PortOut, PortIn } from './port';
 import { DataType } from '../models';
+import { Menu } from './menu';
 import { GraphView } from '../controller/graph-controller';
 
 export class Graph {
@@ -104,5 +105,45 @@ export class Graph {
     })
     this.nodes.forEach((node, i) => node['_id'] = undefined);
     return { nodes, links };
+  }
+
+
+  nodeFromJson(nodeJson) {
+    // construct the node of the right type
+    let newNode = new Menu.instance.nodeClassRegistry[nodeJson.id]() as Node;
+    newNode.name = nodeJson.name;
+    newNode.display = nodeJson.display;
+
+    // make the text inputs right
+    for (let i = 0; i < Math.min(newNode.textInputs.length, nodeJson.textInputs.length); i++) {
+      const textInput = newNode.textInputs[i];
+      textInput.name = nodeJson.textInputs[i].name;
+      textInput.text = nodeJson.textInputs[i].text;
+      if (!textInput.checker(textInput.text))
+        textInput.text = textInput.defaultText;
+    }
+
+    // make the ports right
+    newNode.inputs = nodeJson.inputs.map(input => new PortIn(<any>DataType[input.dataType], newNode, input.name));
+    newNode.outputs = nodeJson.outputs.map(output =>
+                                           new PortOut(<any>DataType[output.dataType], newNode, output.name));
+
+    return newNode;
+  }
+
+  combineJson(json) {
+    let newNodes: Node[] = json.nodes.map(this.nodeFromJson);
+    let newLinks: Link[] = [];
+    json.links.forEach(link => {
+      let newLink = new Link(newNodes[link.from.node].outputs[link.from.port],
+                             newNodes[link.to.node].inputs[link.to.port]);
+      newLinks.push(newLink);
+    })
+
+    this.nodes = this.nodes.concat(newNodes);
+    this.links = this.links.concat(newLinks);
+    // draw these stuff
+    newNodes.forEach(node => this.controller.drawNode(node));
+    newLinks.forEach(link => this.controller.drawLink(link));
   }
 }

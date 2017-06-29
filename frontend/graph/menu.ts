@@ -6,7 +6,9 @@ export type Option = NodeClass | OptionList;
 
 export class Menu {
   static instance = new Menu();
+
   options: Option[] = [];
+  nodeClassRegistry = {};
   constructor() {}
 
   addOption(name: string) {
@@ -15,7 +17,13 @@ export class Menu {
     this.options.push({name, options: []});
   }
 
-  addNodeClassToOption(nodeName: string, nodeClass: new() => Node, optionName: string) {
+  registerNodeClass(nodeId: string, nodeName: string, nodeClass: new() => Node, optionName: string) {
+    // check if the id is registered
+    if (this.nodeClassRegistry[nodeId]) {
+      throw new Error(`${nodeId} has been registered`);
+    }
+    this.nodeClassRegistry[nodeId] = nodeClass;
+    nodeClass.prototype.getClassId = () => nodeId;
     let option = this.options.filter(option => option.name == optionName)[0] as OptionList;
     if (option && option.options.filter(node => node.name == nodeName).length == 0) {
       option.options.push({name: nodeName, nodeClass: nodeClass});
