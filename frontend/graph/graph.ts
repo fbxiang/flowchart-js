@@ -16,6 +16,7 @@ export class Graph {
     this.nodes.push(newNode);
     this.controller.drawNode(newNode);
     console.log(this.toJson());
+    this.storeGraph();
   }
 
   removeNode(node: Node) {
@@ -36,6 +37,8 @@ export class Graph {
 
     // update all nodes
     this.nodes.forEach(node => {node.update(), this.markNodeForUpdate(node)});
+
+    this.storeGraph();
   }
 
   updateQueue: Set<Node> = new Set();
@@ -70,6 +73,8 @@ export class Graph {
 
     this.markNodeForUpdate(newLink.start.parentNode);
     this.markNodeForUpdate(newLink.end.parentNode);
+
+    this.storeGraph();
   }
 
   // remove link and update node
@@ -85,6 +90,8 @@ export class Graph {
 
     this.markNodeForUpdate(link.start.parentNode);
     this.markNodeForUpdate(link.end.parentNode);
+
+    this.storeGraph();
   }
 
   updateNode(node: Node) {
@@ -145,5 +152,15 @@ export class Graph {
     // draw these stuff
     newNodes.forEach(node => this.controller.drawNode(node));
     newLinks.forEach(link => this.controller.drawLink(link));
+  }
+
+  storeGraph() {
+    localStorage.setItem('graph', JSON.stringify(this.toJson()));
+  }
+
+  loadGraph() {
+    try {
+      this.combineJson(JSON.parse(localStorage.getItem('graph')));
+    } catch (e) { }
   }
 }
