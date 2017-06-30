@@ -1,4 +1,5 @@
 import * as express from 'express';
+import { graph } from './model/graph';
 
 const app = express();
 

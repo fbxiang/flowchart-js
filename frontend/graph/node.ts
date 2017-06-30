@@ -155,6 +155,7 @@ export class NodePrint extends Node {
     this.name = "print";
     this.inputs.push(new PortIn(DataType.Execution, this));
     this.addInput();
+    this.outputs.push(new PortOut(DataType.Execution, this));
   }
 
   update() {
@@ -291,7 +292,6 @@ export class NodeStart extends Node {
     this.outputs.push(new PortOut(DataType.Execution, this));
   }
 }
-
 
 Menu.instance.addOption('Control');
 Menu.instance.addOption('Util');
