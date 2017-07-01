@@ -77,6 +77,10 @@ export class Node {
   inputs: PortIn[] = [];
   outputs: PortOut[] = [];
 
+  getClass() {
+    return this.constructor.name;
+  }
+
   execute(inputs: any[], done: (outputs: any[]) => any) {
     done([]);
   }
@@ -162,7 +166,7 @@ export namespace Node {
 
     execute(inputs: any[], done) {
       const line = this.textInputs[0];
-      const words = line.split(' ').filter(x => x !== '');
+      const words = line.trim().split(' ').filter(x => x !== '');
       const command = words[0];
       const args = words.slice(1);
 
@@ -170,7 +174,7 @@ export namespace Node {
       let stderr = '';
 
       const process = spawn(command, args);
-      if (inputs[0]) {
+      if (inputs[1]) {
         process.stdin.write(inputs[0]);
       }
 

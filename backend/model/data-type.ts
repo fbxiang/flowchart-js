@@ -24,4 +24,17 @@ export namespace DataType {
       return a == b
     }
   }
+
+  export function defaultValue(d: DataType) {
+    switch (d) {
+    case DataType.Json: return "{}";
+    case DataType.CSV: return "";
+    case DataType.Text: return "";
+    case DataType.Number: return 0;
+    case DataType.String: return "";
+    case DataType.Boolean: return false;
+    case DataType.Any: return undefined;
+    default: undefined;
+    }
+  }
 }
