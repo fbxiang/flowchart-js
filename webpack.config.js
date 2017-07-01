@@ -10,13 +10,11 @@ module.exports = {
   resolve: {
     extensions: [".webpack.js", ".web.js", ".ts", ".tsx", ".js"]
   },
-  plugins: [new HtmlWebpackPlugin({
-    template: "./frontend/index.html"
-  })],
+  plugins: [new HtmlWebpackPlugin({ template: "./frontend/index.html" })],
   module: {
-    loaders: [
-      {test: /\.tsx?$/, loader: "ts-loader"},
-      {test: /\.css/, loader: "style-loader!css-loader"}
+    rules: [
+      {test: /\.tsx?$/, use: ["ts-loader"]},
+      {test: /\.css/, use: ["style-loader", "css-loader"]}
     ]
   },
   devServer: {

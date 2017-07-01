@@ -78,7 +78,6 @@ export class GraphView {
   initMenu() {
     this.canvas.on('contextmenu', () => {
       d3.event.preventDefault();
-      // this.popupBaseMenu(d3.event);
       this.drawMenu();
     });
     this.canvas.on('click', () => {
