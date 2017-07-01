@@ -1,8 +1,9 @@
 import { DataType } from './data-type';
 import { Link } from './link';
+import { spawn } from 'child_process';
 
 export class Port {
-  constructor(public dataType: DataType, public parentNode: Node) {}
+  constructor(public dataType: DataType, public parentNode: Node) { }
 }
 
 export class PortIn extends Port {
@@ -19,8 +20,8 @@ export class NodeSpec {
   _minOutputs: number = 0;
   _maxOutputs: number = Infinity;
 
-  inputs(min: number, max: number) {this._minInputs = min; this._maxInputs = max; return this; }
-  outputs(min: number, max: number) {this._maxOutputs = min; this._maxOutputs = max; return this; }
+  inputs(min: number, max: number) { this._minInputs = min; this._maxInputs = max; return this; }
+  outputs(min: number, max: number) { this._maxOutputs = min; this._maxOutputs = max; return this; }
 
   _inputType(i: number, total: number): DataType { return DataType.Any; }
   _outputType(i: number, total: number): DataType { return DataType.Any; }
@@ -31,7 +32,7 @@ export class NodeSpec {
   _textInputs: number;
   _textChecker(i: number, text: string): boolean { return true };
 
-  textInputs(n: number) {this._textInputs = n; return this; }
+  textInputs(n: number) { this._textInputs = n; return this; }
   textChecker(func: (i: number, text: string) => boolean) { this._textChecker = func; return this };
 
   checkInOut(node: Node) {
@@ -76,6 +77,9 @@ export class Node {
   inputs: PortIn[] = [];
   outputs: PortOut[] = [];
 
+  execute(inputs: any[], done: (outputs: any[]) => any) {
+    done([]);
+  }
 }
 
 export namespace Node {
@@ -100,6 +104,12 @@ export namespace Node {
         .inputType(() => DataType.Number)
         .outputType(() => DataType.Number);
     }
+
+    execute(inputs: any[], done) {
+      if (!inputs.every(n => typeof n === 'number'))
+        throw new Error('Some input is not a number')
+      done([inputs.reduce((a, b) => a+b, 0)]);
+    }
   }
 
   export class NodeMultiply extends Node {
@@ -111,6 +121,12 @@ export namespace Node {
         .textInputs(0)
         .inputType(() => DataType.Number)
         .outputType(() => DataType.Number);
+    }
+
+    execute(inputs: any[], done) {
+      if (!inputs.every(n => typeof n === 'number'))
+        throw new Error('Some input is not a number');
+      done([inputs.reduce((a, b) => a + b, 0)]);
     }
   }
 
@@ -124,6 +140,13 @@ export namespace Node {
         .outputType(() => DataType.Number)
         .textChecker((i, text) => !Number.isNaN(Number(text)))
     }
+
+    execute(inputs, done) {
+      const n = Number(this.textInputs[0]);
+      if (Number.isNaN(n))
+        throw Error('Input is not a number');
+      done([n]);
+    }
   }
 
   export class NodeCommand extends Node {
@@ -133,12 +156,33 @@ export namespace Node {
         .inputs(2, 2)
         .outputs(4, 4)
         .textInputs(1)
-        .inputType(i => i == 0 ? DataType.Execution : DataType.String )
-        .outputType(i => i == 0 ? DataType.Execution : (i == 3 ? DataType.Number : DataType.String) )
+        .inputType(i => i == 0 ? DataType.Execution : DataType.String)
+        .outputType(i => i == 0 ? DataType.Execution : (i == 3 ? DataType.Number : DataType.String))
+    }
+
+    execute(inputs: any[], done) {
+      const line = this.textInputs[0];
+      const words = line.split(' ').filter(x => x !== '');
+      const command = words[0];
+      const args = words.slice(1);
+
+      let stdout = '';
+      let stderr = '';
+
+      const process = spawn(command, args);
+      if (inputs[0]) {
+        process.stdin.write(inputs[0]);
+      }
+
+      process.stdout.on('data', data => stdout += data);
+      process.stderr.on('data', data => stderr += data);
+      process.on('close', code => {
+        done([1, stdout, stderr, code]);
+      })
     }
   }
 
-  export class NodeControlStart extends Node {
+  export class NodeStart extends Node {
     constructor() {
       super();
       this.spec = new NodeSpec()
@@ -146,6 +190,10 @@ export namespace Node {
         .outputs(1, 1)
         .textInputs(0)
         .outputType(() => DataType.Execution);
+    }
+
+    execute(inputs: any[], done) {
+      done([1]);
     }
   }
 
@@ -159,6 +207,9 @@ export namespace Node {
         .inputType((i) => i == 0 ? DataType.Execution : DataType.String)
         .outputType(() => DataType.Execution);
     }
-  }
 
+    execute(inputs: any[], done) {
+      inputs.slice(1).forEach(s => console.log(s));
+    }
+  }
 }
