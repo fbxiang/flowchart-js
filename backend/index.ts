@@ -3,14 +3,18 @@ import { graph } from './model/graph';
 
 const app = express();
 
-app.get('/api', (req, res) => {
-  res.send('api works');
-})
+// app.get('/api', (req, res) => {
+//   res.send('api works');
+// })
 
 
-app.get('**', (req, res) => {
-  res.send('hello world');
-})
+// app.get('**', (req, res) => {
+//   res.send('hello world');
+// })
+
+graph.execute().then(() => {
+  console.log('finished');
+});
 
 const port = 3000;
 

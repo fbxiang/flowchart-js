@@ -77,6 +77,9 @@ export class Node {
   inputs: PortIn[] = [];
   outputs: PortOut[] = [];
 
+  _executionMeta: {visited: boolean, executed: boolean, outputs: any[]}
+    = {visited: false, executed: false, outputs: null};
+
   getClass() {
     return this.constructor.name;
   }
@@ -89,7 +92,6 @@ export class Node {
 export namespace Node {
 
   export function fromJson(json) {
-    console.log(json.id);
     const newNode = new Node[json.id]() as Node; // create node of the right class
     newNode.inputs = json.inputs.map(input => new PortIn(DataType.fromString(input.dataType), newNode));
     newNode.outputs = json.outputs.map(output => new PortOut(DataType.fromString(output.dataType), newNode));
@@ -213,7 +215,7 @@ export namespace Node {
     }
 
     execute(inputs: any[], done) {
-      inputs.slice(1).forEach(s => console.log(s));
+      inputs.slice(1).forEach(s => console.log('print:', s));
     }
   }
 
@@ -225,7 +227,7 @@ export namespace Node {
         .outputs(1, 1)
         .textInputs(0)
         .inputType(() => DataType.String)
-        .outputType(() => DataType.String)
+        .outputType(() => DataType.String);
     }
 
     execute(inputs: any[], done) {
