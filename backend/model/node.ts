@@ -216,4 +216,20 @@ export namespace Node {
       inputs.slice(1).forEach(s => console.log(s));
     }
   }
+
+  export class NodeStringConcat extends Node {
+    constructor() {
+      super();
+      this.spec = new NodeSpec()
+        .inputs(1, Infinity)
+        .outputs(1, 1)
+        .textInputs(0)
+        .inputType(() => DataType.String)
+        .outputType(() => DataType.String)
+    }
+
+    execute(inputs: any[], done) {
+      done([inputs.reduce((a, b) => a + b, '')]);
+    }
+  }
 }

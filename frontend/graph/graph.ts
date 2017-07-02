@@ -101,6 +101,12 @@ export class Graph {
     node.outputs.forEach(output => output.outLinks.forEach(link => this.controller.updateLink(link)));
   }
 
+  updateNodePosition(node: Node, newX, newY) {
+    node.display.x = newX;
+    node.display.y = newY;
+    this.controller.updateNodePosition(node);
+  }
+
   toJson() {
     this.nodes.forEach((node, i) => node['_id'] = i);
     const nodes = this.nodes.map(node => node.toJson());
@@ -113,7 +119,6 @@ export class Graph {
     this.nodes.forEach((node, i) => node['_id'] = undefined);
     return { nodes, links };
   }
-
 
   nodeFromJson(nodeJson) {
     // construct the node of the right type

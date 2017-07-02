@@ -29,6 +29,9 @@ export class GraphView {
   hoveredPortIn: PortIn;
   hoveredPortOut: PortOut;
 
+  get canvasWidth() { return 3 * this.svgWidth }
+  get canvasHeight() { return 3 * this.svgHeight }
+
   getMousePosition() {
     return d3.mouse((<any>this.svg.node()));
   }
@@ -44,12 +47,14 @@ export class GraphView {
     this.svgHeight = clientRect.height;
 
     const that = this;
-    const zoomGroup = this.svg.call(d3.zoom().translateExtent([[0, 0], [this.svgWidth, this.svgHeight]])
-                             .scaleExtent([1, 20])
-                             .on("zoom", () => {
-                               zoomGroup.attr('transform', d3.event.transform);
-                               this.closeMenu();
-                             })).append('g');
+    const zoomGroup = this.svg.call(
+      d3.zoom()
+        .translateExtent([[0, 0], [this.canvasWidth, this.canvasHeight]])
+        .scaleExtent([0.3333, 5])
+        .on("zoom", () => {
+          zoomGroup.attr('transform', d3.event.transform);
+          this.closeMenu();
+        })).append('g');
     this.svg = zoomGroup;
     this.drawGridLines();
     this.initMenu();
@@ -58,20 +63,50 @@ export class GraphView {
 
   drawGridLines() {
     this.svg.selectAll('.graph-grid').remove();
-    const yScale = d3.scaleLinear().range([0, this.svgHeight]);
-    const xScale = d3.scaleLinear().range([0, this.svgWidth]);
-    this.svg.append('g')
-      .classed('graph-grid', true).call(d3.axisLeft(yScale)
-                                        .ticks(Math.round(this.svgHeight / this.gridWidth))
-                                        .tickSize(-this.svgWidth))
-    this.svg.append('g')
-      .classed('graph-grid', true).call(d3.axisTop(xScale)
-                                        .ticks(Math.round(this.svgWidth / this.gridWidth))
-                                        .tickSize(-this.svgHeight));
+    const graphGrid = this.svg.append('g').classed('.graph-grid', true);
+    let i = 0;
+    for (let x = 0; x <= this.canvasWidth; x += this.gridWidth) {
+      graphGrid.append('line')
+        .attr('x1', x)
+        .attr('y1', 0)
+        .attr('x2', x)
+        .attr('y2', this.canvasHeight)
+        .attr('stroke-width', 1)
+        .attr('stroke', 'gray');
+    }
+    for (let y = 0; y <= this.canvasHeight; y += this.gridWidth) {
+      graphGrid.append('line')
+        .attr('x1', 0)
+        .attr('y1', y)
+        .attr('x2', this.canvasWidth)
+        .attr('y2', y)
+        .attr('stroke-width', 1)
+        .attr('stroke', 'gray');
+    }
+
+    for (let x = 0; x <= this.canvasWidth; x += this.gridWidth * 10) {
+      graphGrid.append('line')
+        .attr('x1', x)
+        .attr('y1', 0)
+        .attr('x2', x)
+        .attr('y2', this.canvasHeight)
+        .attr('stroke-width', 1)
+        .attr('stroke', '#666666');
+    }
+    for (let y = 0; y <= this.canvasHeight; y += this.gridWidth * 10) {
+      graphGrid.append('line')
+        .attr('x1', 0)
+        .attr('y1', y)
+        .attr('x2', this.canvasWidth)
+        .attr('y2', y)
+        .attr('stroke-width', 1)
+        .attr('stroke', '#666666');
+    }
+
     this.canvas = this.svg.append('rect')
       .classed('canvas', true)
-      .attr('width', '100%')
-      .attr('height', '100%')
+      .attr('width', this.canvasWidth)
+      .attr('height', this.canvasHeight)
       .style('fill', 'transparent');
   }
 
@@ -87,11 +122,33 @@ export class GraphView {
     })
   }
 
+  initKeys() {
+    d3.select('body').on('keydown', () => {
+      switch (d3.event.key) {
+      case 'x': this.deleteSelection(); return;
+      case 's':
+        d3.event.preventDefault();
+        if (d3.event.ctrlKey) {
+          let text = JSON.stringify(this.graph.toJson());
+          let element = document.createElement('a');
+          element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+          element.setAttribute('download', 'graph.json');
+          element.style.display = 'none';
+          document.body.appendChild(element);
+          element.click();
+          document.body.removeChild(element);
+        }
+      }
+    })
+  }
+
+  /* Menu functions */
+
   menuStack: d3Selection[] = [];
   drawNextMenu(activeOption: d3Selection) {
     const that = this;
 
-    let {top, right} = (<any>activeOption.node()).getBoundingClientRect();
+    let { top, right } = (<any>activeOption.node()).getBoundingClientRect();
 
     let [x, y] = [right, top];
 
@@ -114,7 +171,8 @@ export class GraphView {
       .on('click', function(d) {
         if ((<any>d).nodeClass) {
           let newNode = new (<any>d).nodeClass();
-          newNode.display = {x: x-20, y: y-20};
+          newNode.display = { x: that.menuX - 20, y: that.menuY - 20 };
+          console.log(newNode.display);
           that.graph.addNode(newNode);
           that.closeMenu();
         }
@@ -123,6 +181,7 @@ export class GraphView {
     this.menuStack.push(menuSelection);
   }
 
+  menuX = 0; menuY = 0;
   popMenuStackTo(layer: number) {
     while (this.menuStack.length > layer) {
       this.menuStack.pop().remove();
@@ -133,11 +192,12 @@ export class GraphView {
     const menu = Menu.instance;
     const that = this;
     this.closeMenu();
-    const [x, y] = that.getMousePosition();
+    [this.menuX, this.menuY] = that.getMousePosition();
     const menuSelection = d3.select('body').append('div').classed('graph-menu', true)
       .style('left', d3.event.pageX + 'px')
       .style('top', d3.event.pageY + 'px');
 
+    let done = false;
     let drawMenuOptions = (options) => {
       menuSelection.selectAll('div.graph-menu-option').remove();
       menuSelection.selectAll('div.graph-menu-option')
@@ -145,17 +205,18 @@ export class GraphView {
         .enter()
         .append('div')
         .classed('graph-menu-option', true)
-        .text((d:any) => d.name)
+        .text((d: any) => d.name)
         .on('mouseover', function(d) {
+          if (!done) return;
           that.popMenuStackTo(1);
           if ((<any>d).options) {
             that.drawNextMenu(d3.select(this));
           }
         })
-       .on('click', function(d) {
+        .on('click', function(d) {
           if ((<any>d).nodeClass) {
             let newNode = new (<any>d).nodeClass();
-            newNode.display = {x: x-20, y: y-20};
+            newNode.display = { x: that.menuX - 20, y: that.menuY - 20 };
             that.graph.addNode(newNode);
             that.closeMenu();
           }
@@ -171,33 +232,29 @@ export class GraphView {
         } else {
           drawMenuOptions(menu.options);
         }
-       });
+      });
     (<any>searchInput.node()).focus();
 
     drawMenuOptions(menu.options);
     menuSelection.style('transform', 'scale(0)').transition().duration(200)
       .style('transform', 'scale(1)')
-      .on('end', () => menuSelection.selectAll('div'));
+      .on('end', () => {
+        done = true;
+      });
     this.menuStack.push(menuSelection);
 
-  }
-
-  initKeys() {
-    d3.select('body').on('keydown', () => {
-      if (d3.event.key == 'x') {
-        this.deleteSelection();
-      }
-    })
-  }
-
-  clearSelection() {
-    this.svg.selectAll('.graph-node').classed('selected', false);
   }
 
   closeMenu() {
     this.menuOpen = false;
     d3.select('body').selectAll('.graph-menu').remove();
     this.menuStack = [];
+  }
+
+  /* Node functions */
+
+  clearSelection() {
+    this.svg.selectAll('.graph-node').classed('selected', false);
   }
 
   drawTextInputs(inputs: TextInput[], parentSelection: d3Selection) {
@@ -231,13 +288,16 @@ export class GraphView {
           }
           (<any>this).blur();
         }
+      }).on('keydown', function(d) {
+        console.log(d3.event);
+        event.stopPropagation();
       });
 
     parent.attr('width', width).attr('height', d => totalHeight);
     return parent;
   }
 
-  drawNode(node: Node, selected=false) {
+  drawNode(node: Node, selected = false) {
     const newNode = this.svg.append('g').classed('graph-node', true)
       .attr('transform', `translate(${node.display.x}, ${node.display.y})`)
     newNode.datum(node).classed('selected', selected);
@@ -346,10 +406,10 @@ export class GraphView {
     const outPortsX = inPortsRect.width + contentWidth + outPortsRect.width;
     const outPortsY = titleRect.height + offset;
     inPorts.selectAll('circle').each((d, i) => {
-      d['_position'] = {x: inPortsX, y: inPortsY + i * separation }
+      d['_position'] = { x: inPortsX, y: inPortsY + i * separation }
     });
     outPorts.selectAll('circle').each((d, i) => {
-      d['_position'] = {x: outPortsX, y: outPortsY + i * separation }
+      d['_position'] = { x: outPortsX, y: outPortsY + i * separation }
     })
 
     //update
@@ -358,7 +418,7 @@ export class GraphView {
 
     rect.attr('width', contentWidth + inPortsRect.width + outPortsRect.width)
       .attr('height', Math.max(inPortsRect.height + offset, outPortsRect.height + offset, contentHeight)
-            + titleRect.height);
+      + titleRect.height);
 
     // final size
     const nodeRect: SVGRect = (<any>newNode.node()).getBBox();
@@ -373,19 +433,19 @@ export class GraphView {
       newNode.raise();
     })
 
-    newNode.call(d3.drag().on('start', () => {})
-                 .on('drag', () => {
-                   // update position
-                   let newX = node.display.x + d3.event.dx;
-                   let newY = node.display.y + d3.event.dy;
+    newNode.call(d3.drag().on('start', () => { })
+      .on('drag', () => {
+        // update position
+        let newX = node.display.x + d3.event.dx;
+        let newY = node.display.y + d3.event.dy;
 
-                   newX = Math.max(newX, 0);
-                   newY = Math.max(newY, 0);
-                   newX = Math.min(newX, this.svgWidth - nodeRect.width);
-                   newY = Math.min(newY, this.svgHeight - nodeRect.height);
+        newX = Math.max(newX, 0);
+        newY = Math.max(newY, 0);
+        newX = Math.min(newX, this.canvasWidth - nodeRect.width);
+        newY = Math.min(newY, this.canvasHeight - nodeRect.height);
 
-                   this.updateNodePosition(node, newX, newY);
-                 }))
+        this.graph.updateNodePosition(node, newX, newY);
+      }))
 
     const that = this; // hack
     let targetX = 0;
@@ -454,11 +514,9 @@ export class GraphView {
     });
   }
 
-  updateNodePosition(node: Node, newX, newY) {
+  updateNodePosition(node: Node) {
     if (!node) return;
-    d3.select(node._elem).attr('transform', `translate(${newX}, ${newY})`)
-    node.display.x = newX;
-    node.display.y = newY;
+    d3.select(node._elem).attr('transform', `translate(${node.display.x}, ${node.display.y})`)
     node.inputs.forEach(port => this.updateLink(port.inLink));
     node.outputs.forEach(port => port.outLinks.forEach(link => this.updateLink(link)));
   }
