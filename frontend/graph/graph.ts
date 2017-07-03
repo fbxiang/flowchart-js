@@ -3,12 +3,12 @@ import { Link } from './link';
 import { Port, PortOut, PortIn } from './port';
 import { DataType } from '../models';
 import { Menu } from './menu';
-import { GraphView } from '../controller/graph-controller';
+import { GraphController } from './controller';
 
 export class Graph {
   nodes: Node[] = [];
   links: Link[] = [];
-  controller: GraphView
+  controller: GraphController
 
   addNode(newNode: Node) {
     if (!newNode) return;

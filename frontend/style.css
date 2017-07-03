@@ -4,6 +4,52 @@ body {
   overflow: hidden;
 }
 
+.graph-panel-container {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  text-align: center;
+  pointer-events: none;
+}
+
+.graph-panel {
+  background-color: rgba(0, 0, 0, 0.7);
+  margin: auto;
+  display: inline-flex;
+  flex-direction: row;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.graph-panel button {
+  color: white;
+  background-color: transparent;
+  outline: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2em;
+  padding: 10px 15px;
+  transition: all 0.2s;
+}
+
+.graph-panel button:hover {
+  background-color: rgba(255,255,255,0.3);
+}
+
+.graph-panel button[disabled] {
+  color: gray;
+  cursor: default;
+}
+
+.graph-panel .text {
+  color: white;
+  margin: auto;
+  text-align: left;
+  padding: 0 10px;
+}
+
 .svg-container {
   width: 100%;
   height: 100vh;

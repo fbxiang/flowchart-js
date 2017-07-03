@@ -13,19 +13,15 @@ function linkHorizontal(source: [number, number], target: [number, number]) {
 
 type d3Selection = d3.Selection<d3.BaseType, {}, HTMLElement, any>;
 
-export class GraphView {
+export class GraphController {
   graph = new Graph();
   menuOpen = false;
-
   svg: d3Selection;
   canvas: d3Selection;
-
   svgWidth = 0;
   svgHeight = 0;
   gridWidth = 20;
-
   linkDrag: d3Selection;
-
   hoveredPortIn: PortIn;
   hoveredPortOut: PortOut;
 

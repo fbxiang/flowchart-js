@@ -2,12 +2,15 @@ import * as $ from 'jquery';
 import * as d3 from 'd3';
 import { Node, PortIn, PortOut } from './graph';
 import { DataType } from './models';
+import { PanelController } from './panel'
 require('./style.css');
-
-import { GraphView } from './controller/graph-controller';
-
+import { GraphController } from './graph/controller';
 const svg = d3.select('svg');
 
-const view = new GraphView(svg);
+const graphController = new GraphController(svg);
+const panelController = new PanelController();
+panelController.panel.onStart(() => {
+  console.log('start!!!');
+})
 
-view.graph.loadGraph();
+graphController.graph.loadGraph();
