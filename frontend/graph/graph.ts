@@ -8,9 +8,11 @@ import { GraphController } from './controller';
 export class Graph {
   nodes: Node[] = [];
   links: Link[] = [];
-  controller: GraphController
+  controller: GraphController;
+  locked: boolean = false;
 
   addNode(newNode: Node) {
+    if (this.locked) return;
     if (!newNode) return;
     newNode['graph'] = this;
     this.nodes.push(newNode);
@@ -20,6 +22,7 @@ export class Graph {
   }
 
   removeNode(node: Node) {
+    if (this.locked) return;
     if (!node) return;
 
     let markedLinks = new Set();
@@ -54,6 +57,7 @@ export class Graph {
   }
 
   addLink(portBegin: PortOut, portEnd: PortIn) {
+    if (this.locked) return;
     if (!portBegin || !portEnd) return;
     if (!DataType.canCast(portBegin.dataType, portEnd.dataType)) return;
     if (portBegin.parentNode === portEnd.parentNode)
@@ -79,6 +83,9 @@ export class Graph {
 
   // remove link and update node
   removeLink(link: Link) {
+    console.log('try remove');
+    if (this.locked) return;
+    console.log('can remove');
     if (!link) return;
 
     let index = link.start.outLinks.indexOf(link);
@@ -120,6 +127,10 @@ export class Graph {
     return { nodes, links };
   }
 
+  lock(locked: boolean) {
+    this.locked = locked;
+  }
+
   nodeFromJson(nodeJson) {
     // construct the node of the right type
     let newNode = new Node[nodeJson.id]() as Node;
@@ -144,6 +155,7 @@ export class Graph {
   }
 
   combineJson(json) {
+    if (this.locked) return;
     let newNodes: Node[] = json.nodes.map(this.nodeFromJson);
     let newLinks: Link[] = [];
     json.links.forEach(link => {

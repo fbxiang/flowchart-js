@@ -376,9 +376,9 @@ export class GraphController {
     });
     outPorts.selectAll('circle').on('contextmenu', (d: PortOut) => {
       d3.event.preventDefault();
-      while (d.outLinks.length) {
-        this.graph.removeLink(d.outLinks[0]);
-      }
+      d.outLinks.map(link => link).forEach(link => {
+        this.graph.removeLink(link);
+      })
     });
 
     //draw content
@@ -567,6 +567,16 @@ export class GraphController {
     if (link._elem) {
       d3.select(link._elem).remove();
     }
+  }
+
+  // lock the graph to prevent any changes
+  lock() {
+    this.graph.lock(true);
+  }
+
+  // unlock the graph
+  unlock() {
+    this.graph.lock(false);
   }
 
   deleteSelection() {

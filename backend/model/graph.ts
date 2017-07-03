@@ -6,7 +6,7 @@ function _isControlNode(node: Node) {
   return node.inputs[0].dataType == DataType.Execution;
 }
 
-async function executeNode(node: Node) {
+async function executeNode(node: Node, theConsole: any) {
   node._executionMeta.visited = true;
   let inputData = [];
   for (let i = 0; i < node.inputs.length; i++) {
@@ -33,19 +33,16 @@ async function executeNode(node: Node) {
     }
 
     if (!inNode._executionMeta.executed) {
-      await executeNode(inNode);
+      await executeNode(inNode, theConsole);
     }
     let outputIndex = inNode.outputs.indexOf(input.inLink.start);
     inputData.push(inNode._executionMeta.outputs[outputIndex]);
   }
 
   let p = new Promise<any[]>((r, e) => {
-    node.execute(inputData, r);
+    node.execute(inputData, r, theConsole);
   })
-  console.log('node', node.getClass());
-  console.log('input', inputData);
   node._executionMeta.outputs = await p;
-  console.log('output', node._executionMeta.outputs);
   node._executionMeta.executed = true;
 }
 
@@ -53,28 +50,49 @@ export class Graph {
   nodes: Node[] = [];
   links: Link[] = [];
 
+  _execution_meta = {finished: false, error: false, message: '', log: ''};
   async execute() {
-    // find the start node in the graph
-    const startNodes = this.nodes.filter(node => node.getClass() == 'NodeStart');
-    if (startNodes.length != 1)
-      throw Error('Invalid number of start nodes');
+    try {
+      // find the start node in the graph
+      const startNodes = this.nodes.filter(node => node.getClass() == 'NodeStart');
+      if (startNodes.length != 1)
+        throw Error('Invalid number of start nodes');
 
-    let currentNode = startNodes[0];
+      let currentNode = startNodes[0];
 
-    const that = this;
+      const that = this;
 
-
-    while (currentNode) {
-      await executeNode(currentNode);
-      let nextOut = currentNode.outputs.filter(output => output.dataType == DataType.Execution)[0];
-
-      // add 1 check
-      if (nextOut && nextOut.outLinks[0]) {
-        currentNode = nextOut.outLinks[0].endNode;
-      } else {
-        break;
+      let theConsole = {
+        text: '',
+        log: function(...params) {
+          theConsole.text += params.map(param => param.toString()).join(' ');
+          theConsole.text += '\n';
+        }
       }
+
+      while (currentNode) {
+        console.log(currentNode.getClass());
+        await executeNode(currentNode, theConsole);
+
+        let nextNode = null;
+        for (let i = 0; i < currentNode.outputs.length; i++) {
+          if (currentNode.outputs[i].dataType == DataType.Execution
+              && currentNode._executionMeta.outputs[i]
+              && currentNode.outputs[i].outLinks[0]) {
+            nextNode = currentNode.outputs[i].outLinks[0].endNode;
+            break;
+          }
+        }
+        currentNode = nextNode;
+      }
+      this._execution_meta.message = 'finished';
+      this._execution_meta.log = theConsole.text;
+    } catch (e) {
+      this._execution_meta.error = true;
+      this._execution_meta.message = e.toString();
     }
+
+    this._execution_meta.finished = true;
   }
 }
 
@@ -98,7 +116,3 @@ export namespace Graph {
     throw Error(`Cannot cast ${portStart.dataType} to ${portEnd.dataType}`);
   }
 }
-
-export const graph = Graph.fromJson(
-  { "nodes": [{ "id": "NodeStart", "name": "Start", "textInputs": [], "inputs": [], "outputs": [{ "name": "", "dataType": "Execution" }], "display": { "x": 55.506126403808594, "y": 100.95315551757812 } }, { "id": "NodeCommand", "name": "Command", "textInputs": [{ "name": "command", "text": "python --version" }], "inputs": [{ "name": "", "dataType": "Execution" }, { "name": "stdin", "dataType": "String" }], "outputs": [{ "name": "", "dataType": "Execution" }, { "name": "stdout", "dataType": "String" }, { "name": "stderr", "dataType": "String" }, { "name": "return", "dataType": "Number" }], "display": { "x": 228.06497192382812, "y": 51.32646560668945 } }, { "id": "NodePrint", "name": "print", "textInputs": [], "inputs": [{ "name": "", "dataType": "Execution" }, { "name": "", "dataType": "String" }, { "name": "", "dataType": "String" }], "outputs": [{ "name": "", "dataType": "Execution" }], "display": { "x": 1674.36328125, "y": 77.46625518798828 } }, { "id": "NodeStringConcat", "name": "String Concat", "textInputs": [], "inputs": [{ "name": "", "dataType": "String" }, { "name": "", "dataType": "String" }, { "name": "", "dataType": "String" }], "outputs": [{ "name": "", "dataType": "String" }], "display": { "x": 750.0693969726562, "y": 268.7295227050781 } }, { "id": "NodeStringConcat", "name": "String Concat", "textInputs": [], "inputs": [{ "name": "", "dataType": "String" }, { "name": "", "dataType": "String" }, { "name": "", "dataType": "String" }, { "name": "", "dataType": "String" }], "outputs": [{ "name": "", "dataType": "String" }], "display": { "x": 1495.7490844726562, "y": 253.30410766601562 } }, { "id": "NodeCommand", "name": "Command", "textInputs": [{ "name": "command", "text": "python3 --version" }], "inputs": [{ "name": "", "dataType": "Execution" }, { "name": "stdin", "dataType": "String" }], "outputs": [{ "name": "", "dataType": "Execution" }, { "name": "stdout", "dataType": "String" }, { "name": "stderr", "dataType": "String" }, { "name": "return", "dataType": "Number" }], "display": { "x": 731.2111053466797, "y": 60.828521728515625 } }, { "id": "NodeStringConcat", "name": "String Concat", "textInputs": [], "inputs": [{ "name": "", "dataType": "String" }, { "name": "", "dataType": "String" }, { "name": "", "dataType": "String" }], "outputs": [{ "name": "", "dataType": "String" }], "display": { "x": 1206.202880859375, "y": 170.90194702148438 } }], "links": [{ "from": { "node": 0, "port": 0 }, "to": { "node": 1, "port": 0 } }, { "from": { "node": 1, "port": 1 }, "to": { "node": 3, "port": 0 } }, { "from": { "node": 1, "port": 1 }, "to": { "node": 3, "port": 1 } }, { "from": { "node": 3, "port": 0 }, "to": { "node": 4, "port": 0 } }, { "from": { "node": 3, "port": 0 }, "to": { "node": 4, "port": 1 } }, { "from": { "node": 4, "port": 0 }, "to": { "node": 2, "port": 1 } }, { "from": { "node": 1, "port": 0 }, "to": { "node": 5, "port": 0 } }, { "from": { "node": 5, "port": 0 }, "to": { "node": 2, "port": 0 } }, { "from": { "node": 5, "port": 1 }, "to": { "node": 6, "port": 0 } }, { "from": { "node": 3, "port": 0 }, "to": { "node": 6, "port": 1 } }, { "from": { "node": 6, "port": 0 }, "to": { "node": 4, "port": 2 } }] }
-);

@@ -84,7 +84,7 @@ export class Node {
     return this.constructor.name;
   }
 
-  execute(inputs: any[], done: (outputs: any[]) => any) {
+  execute(inputs: any[], done: (outputs: any[]) => any, output?: any, error?: any) {
     done([]);
   }
 }
@@ -214,8 +214,9 @@ export namespace Node {
         .outputType(() => DataType.Execution);
     }
 
-    execute(inputs: any[], done) {
-      inputs.slice(1).forEach(s => console.log('print:', s));
+    execute(inputs: any[], done, theConsole) {
+      inputs.slice(1).forEach(s => theConsole.log(s));
+      done([1]);
     }
   }
 

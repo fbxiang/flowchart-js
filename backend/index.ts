@@ -1,20 +1,23 @@
 import * as express from 'express';
+import * as bodyParser from 'body-parser';
 import { graph } from './model/graph';
+import { graphRouter } from './routers/graph';
 
 const app = express();
 
-// app.get('/api', (req, res) => {
-//   res.send('api works');
-// })
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.get('/api', (req, res) => {
+  res.send('api works');
+})
 
 
-// app.get('**', (req, res) => {
-//   res.send('hello world');
-// })
+app.get('**', (req, res) => {
+  res.send('hello world');
+})
 
-graph.execute().then(() => {
-  console.log('finished');
-});
+app.use('/api', graphRouter);
 
 const port = 3000;
 
