@@ -33,7 +33,7 @@ panelController.panel.onStart(async () => {
             panelController.panel.text = 'running';
             setTimeout(fetchInfo, 500);
           } else {
-            panelController.panel.text = 'finished';
+            panelController.panel.text = res.message;
             panelController.panel.state = PanelState.Stopped;
             graphController.unlock();
             console.log('----------------------------')

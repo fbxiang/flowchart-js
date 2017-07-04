@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "webpack-dev-server",
-    "frontend": "webpack-dev-server",
+    "start": "webpack-dev-server --host 0.0.0.0",
+    "frontend": "webpack-dev-server --host 0.0.0.0",
     "backend": "nodemon"
   },
   "author": "",

@@ -39,10 +39,7 @@ async function executeNode(node: Node, theConsole: any) {
     inputData.push(inNode._executionMeta.outputs[outputIndex]);
   }
 
-  let p = new Promise<any[]>((r, e) => {
-    node.execute(inputData, r, theConsole);
-  })
-  node._executionMeta.outputs = await p;
+  node._executionMeta.outputs = await node.execute(inputData, theConsole);
   node._executionMeta.executed = true;
 }
 
@@ -88,10 +85,10 @@ export class Graph {
       this._execution_meta.message = 'finished';
       this._execution_meta.log = theConsole.text;
     } catch (e) {
+      console.log(e);
       this._execution_meta.error = true;
       this._execution_meta.message = e.toString();
     }
-
     this._execution_meta.finished = true;
   }
 }

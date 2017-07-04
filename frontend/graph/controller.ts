@@ -112,7 +112,6 @@ export class GraphController {
       this.drawMenu();
     });
     this.canvas.on('click', () => {
-      console.log('click');
       this.clearSelection();
       this.closeMenu();
     })
@@ -168,7 +167,6 @@ export class GraphController {
         if ((<any>d).nodeClass) {
           let newNode = new (<any>d).nodeClass();
           newNode.display = { x: that.menuX - 20, y: that.menuY - 20 };
-          console.log(newNode.display);
           that.graph.addNode(newNode);
           that.closeMenu();
         }
@@ -271,7 +269,6 @@ export class GraphController {
       .on('input', function(d) {
         d.text = (<any>this).value;
       }).on('focusout', function(d) {
-        console.log(d.checker(d.text))
         if (!d.checker(d.text)) {
           d.text = d.defaultText;
           (<any>this).value = d.text;
@@ -285,7 +282,6 @@ export class GraphController {
           (<any>this).blur();
         }
       }).on('keydown', function(d) {
-        console.log(d3.event);
         event.stopPropagation();
       });
 

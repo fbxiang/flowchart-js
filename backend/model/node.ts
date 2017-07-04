@@ -84,8 +84,8 @@ export class Node {
     return this.constructor.name;
   }
 
-  execute(inputs: any[], done: (outputs: any[]) => any, output?: any, error?: any) {
-    done([]);
+  async execute(inputs: any[], output?: any, error?: any) {
+    return [];
   }
 }
 
@@ -111,10 +111,10 @@ export namespace Node {
         .outputType(() => DataType.Number);
     }
 
-    execute(inputs: any[], done) {
+    async execute(inputs: any[]) {
       if (!inputs.every(n => typeof n === 'number'))
         throw new Error('Some input is not a number')
-      done([inputs.reduce((a, b) => a+b, 0)]);
+      return [inputs.reduce((a, b) => a+b, 0)];
     }
   }
 
@@ -129,10 +129,10 @@ export namespace Node {
         .outputType(() => DataType.Number);
     }
 
-    execute(inputs: any[], done) {
+    async execute(inputs: any[]) {
       if (!inputs.every(n => typeof n === 'number'))
         throw new Error('Some input is not a number');
-      done([inputs.reduce((a, b) => a + b, 0)]);
+      return [inputs.reduce((a, b) => a + b, 0)];
     }
   }
 
@@ -147,11 +147,11 @@ export namespace Node {
         .textChecker((i, text) => !Number.isNaN(Number(text)))
     }
 
-    execute(inputs, done) {
+    async execute(inputs) {
       const n = Number(this.textInputs[0]);
       if (Number.isNaN(n))
         throw Error('Input is not a number');
-      done([n]);
+      return [n];
     }
   }
 
@@ -166,7 +166,7 @@ export namespace Node {
         .outputType(i => i == 0 ? DataType.Execution : (i == 3 ? DataType.Number : DataType.String))
     }
 
-    execute(inputs: any[], done) {
+    async execute(inputs: any[]) {
       const line = this.textInputs[0];
       const words = line.trim().split(' ').filter(x => x !== '');
       const command = words[0];
@@ -174,17 +174,20 @@ export namespace Node {
 
       let stdout = '';
       let stderr = '';
+      let code = -1;
 
-      const process = spawn(command, args);
-      if (inputs[1]) {
-        process.stdin.write(inputs[0]);
-      }
+      await new Promise<number>((r, e) => {
+        const process = spawn(command, args)
+          .on('error', err => { e(err) });
+        if (inputs[1]) {
+          process.stdin.write(inputs[0]);
+        }
+        process.stdout.on('data', data => stdout += data);
+        process.stderr.on('data', data => stderr += data);
+        process.on('close', c => { code = c; r(); } );
+      });
 
-      process.stdout.on('data', data => stdout += data);
-      process.stderr.on('data', data => stderr += data);
-      process.on('close', code => {
-        done([1, stdout, stderr, code]);
-      })
+      return [1, stdout, stderr, code];
     }
   }
 
@@ -198,8 +201,8 @@ export namespace Node {
         .outputType(() => DataType.Execution);
     }
 
-    execute(inputs: any[], done) {
-      done([1]);
+    async execute(inputs: any[]) {
+      return [1];
     }
   }
 
@@ -214,9 +217,9 @@ export namespace Node {
         .outputType(() => DataType.Execution);
     }
 
-    execute(inputs: any[], done, theConsole) {
+    async execute(inputs: any[], theConsole) {
       inputs.slice(1).forEach(s => theConsole.log(s));
-      done([1]);
+      return [1];
     }
   }
 
@@ -231,8 +234,8 @@ export namespace Node {
         .outputType(() => DataType.String);
     }
 
-    execute(inputs: any[], done) {
-      done([inputs.reduce((a, b) => a + b, '')]);
+    async execute(inputs: any[]) {
+      return [inputs.reduce((a, b) => a + b, '')];
     }
   }
 }

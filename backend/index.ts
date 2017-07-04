@@ -1,6 +1,5 @@
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
-import { graph } from './model/graph';
 import { graphRouter } from './routers/graph';
 
 const app = express();
