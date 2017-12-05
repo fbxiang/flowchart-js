@@ -1,7 +1,7 @@
 # CommandFlowChart Project
 This project focuses on all sorts of flowcharts.
-!(execution)[https://github.com/fbxiang/flowchart-js/raw/master/content/execution.png]  
-!(finished)[https://github.com/fbxiang/flowchart-js/raw/master/content/finished.png]
+![execution](https://github.com/fbxiang/flowchart-js/raw/master/content/execution.png)  
+![finished](https://github.com/fbxiang/flowchart-js/raw/master/content/finished.png)
 ## How to run
 ### Prerequisites
 **It is tested only on Ubuntu and Windows 10**
